@@ -1,0 +1,97 @@
+@import "tailwindcss";
+
+/* ── Fonts ──────────────────────────────────────────────────────────────── */
+@theme inline {
+  --font-display: var(--font-space-grotesk);
+  --font-sans:    var(--font-geist);
+  --font-mono:    var(--font-jetbrains-mono);
+}
+
+/* ── Design tokens (dark-first) ─────────────────────────────────────────── */
+:root {
+  /* Surfaces */
+  --surface:                   #131313;
+  --surface-dim:               #131313;
+  --surface-bright:            #3a3939;
+  --surface-container-lowest:  #0e0e0e;
+  --surface-container-low:     #1c1b1b;
+  --surface-container:         #201f1f;
+  --surface-container-high:    #2a2a2a;
+  --surface-container-highest: #353534;
+  --surface-variant:           #353534;
+  --surface-tint:              #ebb2ff;
+
+  /* On-surface */
+  --on-surface:                #e5e2e1;
+  --on-surface-variant:        #d4c0d7;
+  --inverse-surface:           #e5e2e1;
+  --inverse-on-surface:        #313030;
+
+  /* Outlines */
+  --outline:                   #9d8ba0;
+  --outline-variant:           #504254;
+
+  /* Primary — Vivid Violet */
+  --primary:                   #ebb2ff;
+  --on-primary:                #520072;
+  --primary-container:         #bc13fe;
+  --on-primary-container:      #ffffff;
+  --inverse-primary:           #9800d0;
+  --primary-fixed:             #f8d8ff;
+  --primary-fixed-dim:         #ebb2ff;
+  --on-primary-fixed:          #320047;
+  --on-primary-fixed-variant:  #74009f;
+
+  /* Secondary — Cyber Cyan */
+  --secondary:                 #d3fbff;
+  --on-secondary:              #00363a;
+  --secondary-container:       #00eefc;
+  --on-secondary-container:    #00686f;
+  --secondary-fixed:           #7df4ff;
+  --secondary-fixed-dim:       #00dbe9;
+  --on-secondary-fixed:        #002022;
+  --on-secondary-fixed-variant:#004f54;
+
+  /* Tertiary */
+  --tertiary:                  #c6c6c7;
+  --on-tertiary:               #2f3131;
+  --tertiary-container:        #757777;
+  --on-tertiary-container:     #ffffff;
+  --tertiary-fixed:            #e2e2e2;
+  --tertiary-fixed-dim:        #c6c6c7;
+  --on-tertiary-fixed:         #1a1c1c;
+  --on-tertiary-fixed-variant: #454747;
+
+  /* Error */
+  --error:                     #ffb4ab;
+  --on-error:                  #690005;
+  --error-container:           #93000a;
+  --on-error-container:        #ffdad6;
+
+  /* Background */
+  --background:                #131313;
+  --on-background:             #e5e2e1;
+
+  /* Spacing */
+  --container-max:             1280px;
+  --gutter:                    1rem;
+  --margin-x:                  2rem;
+  --grid-unit:                 4px;
+  --stack-sm:                  8px;
+  --stack-md:                  16px;
+  --stack-lg:                  32px;
+}
+
+/* ── Base reset ─────────────────────────────────────────────────────────── */
+
+/* Sharp shape language — 0px radius everywhere per design spec */
+* {
+  border-radius: 0 !important;
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--background);
+  color: var(--on-background);
+  font-family: var(--font-sans, sans-serif);
+}
