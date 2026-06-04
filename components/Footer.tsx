@@ -1,12 +1,12 @@
-import { Link } from "lucide-react";
+import Link  from "next/link";
 import { navLinks, socialLinks } from "../lib/links";
-import { FaGithub, FaInstagram, FaLinkedin, FaTwitter } from "react-icons/fa";
+import { FaGithub, FaInstagram, FaLinkedin, FaSquareXTwitter } from "react-icons/fa6";
 
 const socialIcons = {
-    Github: <FaGithub size = {16} strokeWidth = {1.5} />,
-    Instagram: <FaInstagram size = {16} strokeWidth = {1.5} />,
-    LinkedIn: <FaLinkedin size = {16} strokeWidth = {1.5} />,
-    Twitter: <FaTwitter size = {16} strokeWidth = {1.5} />,
+    GitHub:    <FaGithub         size={16} />,
+    Instagram: <FaInstagram      size={16} />,
+    LinkedIn:  <FaLinkedin       size={16} />,
+    X:         <FaSquareXTwitter size={16} />,
 }
 
 export default function Footer() {
@@ -42,7 +42,7 @@ export default function Footer() {
                                 rel = "noopener noreferrer"
                                 aria-label = {social.label}
                                 className = "flex items-center justify-center w-8 h-8 transition-colors"
-                                style = {{color: "var(--on_surfance-variant"}}
+                                style={{ color: "var(--on-surface-variant)" }}
                                 >
                                 {socialIcons[social.label as keyof typeof socialIcons]}
                             </a>
@@ -53,8 +53,12 @@ export default function Footer() {
             </div>
 
             {/* Bottom row — TODO: copyright line in JetBrains Mono, small text */}
-             <div className = "text-xs font-bold tracking-tight">© {new Date().getFullYear()} Willard Lee. All rights reserved.</div>
-
+            <div
+                className="px-8 pb-4 text-xs"
+                style={{ fontFamily: "var(--font-mono)", color: "var(--on-surface-variant)" }}
+            >
+                © {new Date().getFullYear()} Willard Lee. All rights reserved.
+            </div>
         </footer>
     )
 }
