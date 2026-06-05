@@ -3,6 +3,7 @@ import remarkGfm from "remark-gfm";
 import rehypeSlug from "rehype-slug";
 import rehypeAutolinkHeadings from "rehype-autolink-headings";
 import rehypePrettyCode from "rehype-pretty-code";
+import { remarkWikiLink } from "./graph";
 
 
 export async function renderMDX(source: string){
@@ -10,7 +11,7 @@ export async function renderMDX(source: string){
         source,
         options: {
             mdxOptions: {
-                remarkPlugins: [remarkGfm],
+                remarkPlugins: [remarkGfm, remarkWikiLink],
                 rehypePlugins: [
                     rehypeSlug,
                     [rehypeAutolinkHeadings, { behavior: "wrap" }],

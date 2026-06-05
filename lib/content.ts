@@ -2,7 +2,7 @@ import "server-only";
 import fs from "node:fs"; /* fs module provides APIs for file system operations */
 import path from "node:path";  /* path module provides utilities for working with file and directory paths */
 import matter from "gray-matter"; /* gray-matter is a library for parsing YAML frontmatter from markdown files */
-import type {ContentType, Entry} from "./types"; /* ContentType and Entry types from ./types */
+import type {ContentType, Entry, BaseFrontmatter} from "./types"; /* ContentType and Entry types from ./types */
 
 const ROOT = path.join(process.cwd(), "content");
 const DIR: Record<ContentType, string> = { /*this creates an object mapping ContentType to directory name*/
@@ -31,12 +31,17 @@ export function getEntries<F = Record<string, unknown>> (type: ContentType): Ent
     return walk(base).map((file) => {
         const { data, content} = matter(fs.readFileSync(file, "utf-8"));
         const slug = path.basename(file, ".mdx");
-        const url = `${PREFIX[type]}/${slug}`;
+        const url = type === "note" 
+            ? `/garden/${data.subject}/${slug}`
+            : `${PREFIX[type]}/${slug}`;
         const fm = {...data, tags: (data.tags ?? []).map((t: string) => t.toLowerCase())} as F;
         return {
             type, slug, url, frontmatter: fm, raw: content } as Entry<F>;
     }).filter((e) => process.env.NODE_ENV === "development" || !(e.frontmatter as Record<string, unknown>).draft).sort((a, b) => ((b.frontmatter as Record<string, unknown>).date as string).localeCompare((a.frontmatter as Record<string, unknown>).date as string));
 }
 
+export const getAllEntries = (): Entry<BaseFrontmatter>[] => (["project", "post", "note", "resource"] as ContentType[]).flatMap((type) => getEntries<BaseFrontmatter>(type));
+
 export const getEntry = <F = Record<string, unknown>>(type: ContentType, slug: string) => 
     getEntries<F>(type).find((e) => e.slug === slug);
+
