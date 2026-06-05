@@ -11,7 +11,7 @@ export function slugMap() {
 //Rewrites [[slug | label ]] into real link nodes during compilation
 export function remarkWikiLink(){
     const map = slugMap();
-    return (tree: any) => visit(tree, "text", (node: any, i: number, parent:any) => {
+    return (tree: any) => visit(tree, "text", (node: any, i: number | undefined, parent:any) => {
         const re = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
         if (!re.test(node.value)) 
             return;

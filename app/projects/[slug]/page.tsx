@@ -3,7 +3,7 @@ import type { ProjectFrontmatter} from "@/lib/types";
 import { renderMDX } from "@/lib/mdx";
 import { notFound } from "next/navigation";
 import Backlinks from "@/components/Backlinks";
-import Related from "@/components/Related"
+import Related from "@/components/Related";
 
 export async function generateStaticParams() {
     return getEntries<ProjectFrontmatter>("project").map((project) => ({
@@ -11,7 +11,7 @@ export async function generateStaticParams() {
     }))
 }
 
-export default async function ProjectPostPage({ params }: { params: Promise<{slug: string}>}) {
+export default async function ProjectPage({ params }: { params: Promise<{slug: string}>}) {
     const { slug } = await params;
     const project = getEntry<ProjectFrontmatter>("project", slug);
     if(!project) notFound();
