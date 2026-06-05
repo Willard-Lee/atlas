@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import { Space_Grotesk, Geist, JetBrains_Mono } from "next/font/google"
+import { Syne, DM_Sans, JetBrains_Mono } from "next/font/google"
 import Providers from "@/components/Providers"
 import Navigation from "@/components/Navigation"
 import Footer from "@/components/Footer"
@@ -8,20 +8,19 @@ import "@/styles/globals.css"
 // ── Fonts ────────────────────────────────────────────────────────────────────
 // Variable names must match what globals.css @theme inline references
 
-const spaceGrotesk = Space_Grotesk({
-    subsets: ["latin"],
-    display: "swap",
-    variable: "--font-space-grotesk", // used by --font-display in globals.css
-    weight: ["400", "500", "600", "700"],
+const syne = Syne({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-syne", 
+  weight: ["400", "500","600", "700", "800"],
 })
 
-const geist = Geist({
-    subsets: ["latin"],
-    display: "swap",
-    variable: "--font-geist", // used by --font-sans in globals.css
-    weight: ["400", "500"],
+const dmSans = DM_Sans({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-dm-sans",
+  weight: ["400", "500"],
 })
-
 const jetbrainsMono = JetBrains_Mono({
     subsets: ["latin"],
     display: "swap",
@@ -44,7 +43,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <html
             lang="en"
             suppressHydrationWarning // required by next-themes to avoid flicker
-            className={`${spaceGrotesk.variable} ${geist.variable} ${jetbrainsMono.variable}`}
+            className={`${syne.variable} ${dmSans.variable} ${jetbrainsMono.variable}`}
         >
             <head>
                 <link rel="icon" href="/favicon.ico" />

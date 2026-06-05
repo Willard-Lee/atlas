@@ -51,4 +51,4 @@ automatically show the backlink.
 ## License
 
 The source code is licensed under the [MIT License](./LICENSE). All written content (blog
-posts, notes, and project descriptions) is © 2026 Your Name, all rights reserved.
+posts, notes, and project descriptions) is © 2026 Willard Lee, all rights reserved.
