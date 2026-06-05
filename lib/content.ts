@@ -26,7 +26,7 @@ function walk(dir: string): string[]{
     });
 }
 
-export function getEntries<F = any> (type: ContentType): Entry<F>[] {
+export function getEntries<F = Record<string, unknown>> (type: ContentType): Entry<F>[] {
     const base = path.join(ROOT, DIR[type]);
     return walk(base).map((file) => {
         const { data, content} = matter(fs.readFileSync(file, "utf-8"));
@@ -35,8 +35,8 @@ export function getEntries<F = any> (type: ContentType): Entry<F>[] {
         const fm = {...data, tags: (data.tags ?? []).map((t: string) => t.toLowerCase())} as F;
         return {
             type, slug, url, frontmatter: fm, raw: content } as Entry<F>;
-    }).filter((e) => process.env.NODE_ENV === "development" || !(e.frontmatter as any).draft).sort((a, b) => (b.frontmatter as any).date.localeCompare((a.frontmatter as any).date));
+    }).filter((e) => process.env.NODE_ENV === "development" || !(e.frontmatter as Record<string, unknown>).draft).sort((a, b) => ((b.frontmatter as Record<string, unknown>).date as string).localeCompare((a.frontmatter as Record<string, unknown>).date as string));
 }
 
-export const getEntry = <F = any>(type: ContentType, slug: string) => 
+export const getEntry = <F = Record<string, unknown>>(type: ContentType, slug: string) => 
     getEntries<F>(type).find((e) => e.slug === slug);

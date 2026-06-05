@@ -1,4 +1,4 @@
-export type ContentType = "project" | "post" | "note" | "resources";
+export type ContentType = "project" | "post" | "note" | "resource";
 
 export interface BaseFrontmatter {
     title: string;
