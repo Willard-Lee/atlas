@@ -12,6 +12,7 @@ export interface BaseFrontmatter {
 export interface PostFrontmatter extends BaseFrontmatter {
     cover?: string;
     comments?: boolean;
+    external_url?: string;
 }
 
 export interface ProjectFrontmatter extends BaseFrontmatter {

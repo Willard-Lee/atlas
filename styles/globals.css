@@ -126,3 +126,32 @@ body {
   color: var(--on-background);
   font-family: var(--font-sans, sans-serif);
 }
+
+.prose p {
+  line-height: 1.8;
+  color: var(--on-surface);
+  margin-bottom: 1rem;
+}
+
+.prose h1, .prose h2, .prose h3 {
+  font-family: var(--font-display);
+  color: var(--primary);
+  margin-bottom: 0.5rem;
+  margin-top: 2rem;
+}
+
+.prose a {
+  color: var(--secondary);
+  text-decoration: underline;
+}
+
+.prose code {
+  font-family: var(--font-mono);
+  background: var(--surface-container-high);
+}
+
+.prose blockquote {
+  border-left: 2px solid var(--primary);
+  padding-left: 1rem;
+  color: var(--on-surface-variant);
+}
