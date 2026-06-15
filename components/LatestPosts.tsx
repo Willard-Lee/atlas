@@ -18,26 +18,30 @@ export default function LatestPosts(){
                 style = {{color: "var(--on-surface-variant)"}}
             >
                 {posts.map((post) => (
-                    <li key = {post.slug} className = "flex flex-col items-start gap-6">
-                        <span className = "text-xs w-24 shrink-0"> {post.frontmatter.date} </span>
-                        <Link href = {post.url} className = "text-base hover:underline">
-                        {post.frontmatter.title}
+                    <li key = {post.slug} className = "flex items-baseline gap-3">
+                        <span className = "text-xs w-24 shrink-0"
+                            style = {{ fontFamily: "var(--font-mono)"}}
+                        >
+                            {post.frontmatter.date} 
+                        </span>
+                        <Link href = {post.url} 
+                            className = "text-base hover:underline"
+                            style = {{ color: "var(--on-surface)"}}
+                        >
+                            {post.frontmatter.title}
                         </Link>
-                        {post.frontmatter.tags && (
-                            <div className = " flex gap-2">
-                                {post.frontmatter.tags.map((tag) => (
-                                    <span 
-                                        key = {tag} 
-                                        className = " text-xs px-2 py-1"
-                                        style = {{fontFamily: "var(--font-mono)",
-                                                background: "var(--surface-container-high)",
-                                                color: "var(--on-surface-variant)"}}
-                                    >
-                                        {tag}
-                                    </span>
-                                ))}
-                            </div>
-                        )}
+                        {post.frontmatter.tags && post.frontmatter.tags.map((tag) => (
+                            <span key = {tag}
+                                className = "text-xs px-2 py-1"
+                                style = {{
+                                    fontFamily: "var(--font-mono)",
+                                    background: "var(--surface-container-high)",
+                                    color: "var(--on-surface-variant)"
+                                }}
+                            >
+                                {tag}
+                            </span>
+                        ))}
                     </li>
                 ))}
             </ul>

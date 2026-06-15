@@ -53,6 +53,21 @@ export default async function BlogPostPage({ params}: {params: Promise<{slug: st
                 
 
             <article className = "prose ">{content}</article>
+            {post.frontmatter.tags && (
+                <div className = "flex gap-2 flex-warp mt-12">
+                    {post.frontmatter.tags.map((tag) => (
+                        <span key = {tag}  
+                            className = "text-xs flex-wrap mt-12"
+                            style = {{
+                                fontFamily: "var(--font-mono)",
+                                background: "var(--surface-container-high)",
+                                color: "var(--on-surface-variant)"
+                            }}>
+                                {tag}
+                            </span>
+                    ))}
+                </div>
+            )}
             <Backlinks url = {post.url}/>
             <Related url = {post.url}/>
         </main>

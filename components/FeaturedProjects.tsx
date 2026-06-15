@@ -5,7 +5,11 @@ import Link from "next/link"
 
 export default function FeaturedProjects() {
     const projects = getEntries<ProjectFrontmatter>("project").filter(p => p.frontmatter.featured);
-    
+    const statusColor: Record<string, string> = {
+        live: "var(--secondary)",
+        wip: "var(--primary)",
+        archived: "var(--on-surface-variant)"
+    }
     return (
         <section className = "px-16 py-24"> {/* Section heading */}
             <h2 className = "text-xs font-bold tracking-widest mb-12"
@@ -18,7 +22,14 @@ export default function FeaturedProjects() {
                     <div key = {project.slug}  /* Card */
                         className = "p-6 transition-colors"
                         style = {{ border: "1px solid var(--outline-variant)"}}
-                    > 
+                    >
+                        <span style = {{
+                            width: "8px",
+                            height: "8px",
+                            borderRadius: "50%",
+                            display: "inline-block",
+                            background: statusColor[project.frontmatter.status],
+                        }}/> 
                         <Link href = {project.url}>
                             <h3 className = "text-xl font-bold mb-2" 
                                 style = {{ color: "var(--on-surface)"}}

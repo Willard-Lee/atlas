@@ -6,7 +6,7 @@ export default async function ResourcePage() {
     const resources = getEntries<ResourceFrontmatter>("resource");
     return (
         <main className = "px-16 py-24">
-            <h1> Resource Page </h1>
+            <h1 className = ""> Resource Page </h1>
             <ul>
                 {resources.map((resource) => (
                     <li key = {resource.slug}>

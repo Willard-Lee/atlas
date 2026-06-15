@@ -32,7 +32,7 @@ export default function Hero (){
                     color: "var(--on-surface-variant)",
                     }}
                 > 
-                    Somewhere betweena financial model and a neural network, that is where I live.
+                    Somewhere between financial model and a neural network, that is where I live.
                 </p>
            </div> 
            {/* Right side */}

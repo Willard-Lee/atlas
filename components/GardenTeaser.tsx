@@ -11,10 +11,15 @@ export default function GardenTeaser() {
     }
     return (
         <section className = "px-16 py-24">
-            <h2>
+            <h2 className = "text-xs font-bold tracking-widest mb-12"
+                style = {{
+                    fontFamily: "var(--font-mono)",
+                    color: "var(--on-surface-variant)"
+                }}
+            >
                 Garden
             </h2>
-            <ul>
+            <ul className = "space-y-4 mb-8">
                 {notes.map((note) => (
                     <li key = {note.slug}>
                         <span 
@@ -31,7 +36,10 @@ export default function GardenTeaser() {
                     </li>
                 ))}
             </ul>
-            <Link href = "/garden"> Explore Garden </Link>
+            <Link href = "/garden"
+                className = "text-xs tracking-widest"
+                style = {{ fontFamily: "var(--font-mono)", color: "var(--on-surface-variant)"}}
+            >EXPLORE GARDEN →</Link>
         </section>
     )
 }
