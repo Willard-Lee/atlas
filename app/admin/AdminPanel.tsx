@@ -1,5 +1,11 @@
 "use client";
 import { useState, useEffect, useRef, useCallback, type RefObject } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+    TbH2, TbH3, TbBold, TbItalic, TbCode, TbFileCode,
+    TbInfoCircle, TbBulb, TbAlertTriangle,
+    TbMath, TbMathFunction, TbPhoto, TbTable, TbLink, TbBrackets,
+} from "react-icons/tb";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -19,6 +25,8 @@ interface LibraryItem {
     type: string; slug: string; filePath: string;
     frontmatter: { title: string; date: string; draft: boolean; subject: string | null };
 }
+
+interface ImageItem { name: string; path: string; }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -46,27 +54,53 @@ const TYPE_COLOR: Record<string, string> = {
     garden: "#4ade80", resource: "#facc15",
 };
 
+function getLiveUrl(type: ContentType, slug: string, subject: string): string {
+    if (type === "blog")    return `/blog/${slug}`;
+    if (type === "project") return `/projects/${slug}`;
+    if (type === "garden")  return `/garden/${subject}/${slug}`;
+    return `/resources/${slug}`;
+}
+
 // ── Toolbar snippets ──────────────────────────────────────────────────────────
 
-interface Snippet { label: string; title: string; text: string; select?: [number, number]; }
+interface Snippet {
+    label: string; title: string; text: string;
+    select?: [number, number];
+    icon?: React.ReactNode;
+    /** accent color shown on hover instead of --primary */
+    accent?: string;
+}
 
-const SNIPPETS: Snippet[] = [
-    { label: "H2",    title: "Heading 2",    text: "\n## Heading\n\n",                           select: [4, 11]  },
-    { label: "H3",    title: "Heading 3",    text: "\n### Heading\n\n",                          select: [5, 12]  },
-    { label: "bold",  title: "Bold",         text: "**text**",                                   select: [2, 6]   },
-    { label: "em",    title: "Italic",       text: "_text_",                                     select: [1, 5]   },
-    { label: "`c`",   title: "Inline code",  text: "`code`",                                     select: [1, 5]   },
-    { label: "```",   title: "Code block",   text: "\n```typescript\n\n```\n",                   select: [16, 16] },
-    { label: "note",  title: "NOTE callout", text: "\n> [!NOTE] Title\n> Content\n\n",           select: [17, 22] },
-    { label: "tip",   title: "TIP callout",  text: "\n> [!TIP] Title\n> Content\n\n",            select: [16, 21] },
-    { label: "warn",  title: "WARNING",      text: "\n> [!WARNING] Title\n> Content\n\n",        select: [20, 25] },
-    { label: "$$",    title: "Math block",   text: "\n$$\n\n$$\n",                               select: [4, 4]   },
-    { label: "$x$",   title: "Inline math",  text: "$x$",                                        select: [1, 2]   },
-    { label: "fig",   title: "Figure",       text: '\n<figure>\n  <img src="/images/" alt="" />\n  <figcaption>Caption</figcaption>\n</figure>\n', select: [25, 33] },
-    { label: "table", title: "GFM table",    text: "\n| Col A | Col B |\n|-------|-------|\n| cell  | cell  |\n\n", select: [3, 8] },
-    { label: "wiki",  title: "Wikilink",     text: "[[slug]]",                                   select: [2, 6]   },
-    { label: "link",  title: "Link",         text: "[text](url)",                                select: [1, 5]   },
+// Groups are separated by null entries (rendered as dividers)
+const SNIPPET_GROUPS: (Snippet | null)[] = [
+    // ── Headings
+    { label: "H2",   title: "Heading 2",    text: "\n## Heading\n\n",                           select: [4, 11],  icon: <TbH2 size={15} /> },
+    { label: "H3",   title: "Heading 3",    text: "\n### Heading\n\n",                          select: [5, 12],  icon: <TbH3 size={15} /> },
+    null,
+    // ── Inline formatting
+    { label: "bold", title: "Bold",         text: "**text**",                                   select: [2, 6],   icon: <TbBold size={14} /> },
+    { label: "em",   title: "Italic",       text: "_text_",                                     select: [1, 5],   icon: <TbItalic size={14} /> },
+    { label: "`c`",  title: "Inline code",  text: "`code`",                                     select: [1, 5],   icon: <TbCode size={14} /> },
+    { label: "```",  title: "Code block",   text: "\n```typescript\n\n```\n",                   select: [16, 16], icon: <TbFileCode size={14} /> },
+    null,
+    // ── Callouts
+    { label: "note", title: "NOTE callout", text: "\n> [!NOTE] Title\n> Content\n\n",           select: [17, 22], icon: <TbInfoCircle size={14} />,      accent: "#00dbe9" },
+    { label: "tip",  title: "TIP callout",  text: "\n> [!TIP] Title\n> Content\n\n",            select: [16, 21], icon: <TbBulb size={14} />,            accent: "#4ade80" },
+    { label: "warn", title: "WARNING",      text: "\n> [!WARNING] Title\n> Content\n\n",        select: [20, 25], icon: <TbAlertTriangle size={14} />,   accent: "#facc15" },
+    null,
+    // ── Math
+    { label: "$$",   title: "Math block",   text: "\n$$\n\n$$\n",                               select: [4, 4],   icon: <TbMath size={14} /> },
+    { label: "$x$",  title: "Inline math",  text: "$x$",                                        select: [1, 2],   icon: <TbMathFunction size={14} /> },
+    null,
+    // ── Media / structure
+    { label: "fig",  title: "Figure",       text: '\n<figure>\n  <img src="/images/" alt="" />\n  <figcaption>Caption</figcaption>\n</figure>\n', select: [25, 33], icon: <TbPhoto size={14} /> },
+    { label: "tbl",  title: "GFM table",    text: "\n| Col A | Col B |\n|-------|-------|\n| cell  | cell  |\n\n",                                select: [3, 8],   icon: <TbTable size={14} /> },
+    null,
+    // ── Links
+    { label: "[[]]", title: "Wikilink",     text: "[[slug]]",                                   select: [2, 6],   icon: <TbBrackets size={14} /> },
+    { label: "link", title: "Link",         text: "[text](url)",                                select: [1, 5],   icon: <TbLink size={14} /> },
 ];
+
 
 function insertSnippet(
     ref: RefObject<HTMLTextAreaElement | null>,
@@ -86,11 +120,7 @@ function insertSnippet(
 
 // ── Resize handle ─────────────────────────────────────────────────────────────
 
-function ResizeHandle({
-    onDelta,
-}: {
-    onDelta: (delta: number) => void;
-}) {
+function ResizeHandle({ onDelta }: { onDelta: (delta: number) => void }) {
     const startX = useRef(0);
 
     function onPointerDown(e: React.PointerEvent<HTMLDivElement>) {
@@ -120,12 +150,12 @@ function ResizeHandle({
 const inputCls   = "w-full font-mono text-xs px-2 py-1.5 bg-transparent border outline-none focus:border-[var(--primary)] transition-colors";
 const inputStyle = { borderColor: "var(--outline-variant)", color: "var(--on-surface)" };
 
-function FieldInput({ value, onChange, placeholder, readOnly }: {
-    value: string; onChange?: (v: string) => void; placeholder?: string; readOnly?: boolean;
+function FieldInput({ value, onChange, placeholder, readOnly, tabIndex }: {
+    value: string; onChange?: (v: string) => void; placeholder?: string; readOnly?: boolean; tabIndex?: number;
 }) {
     return (
         <input value={value} onChange={(e) => onChange?.(e.target.value)} placeholder={placeholder} readOnly={readOnly}
-            autoComplete="off"
+            autoComplete="off" tabIndex={tabIndex}
             className={inputCls}
             style={{ ...inputStyle, ...(readOnly ? { opacity: 0.5, cursor: "not-allowed" } : {}) }} />
     );
@@ -150,6 +180,25 @@ function SideLabel({ children }: { children: React.ReactNode }) {
     );
 }
 
+function SectionToggle({ label, open, onToggle }: { label: string; open: boolean; onToggle: () => void }) {
+    return (
+        <button
+            onClick={onToggle}
+            className="w-full flex items-center gap-2 px-3 py-1.5 text-xs tracking-widest border-y -mx-4 mt-4 mb-3 text-left transition-colors hover:text-[var(--on-surface)]"
+            style={{ borderColor: "var(--outline-variant)", color: "var(--outline)", background: "var(--surface-container)", fontFamily: "var(--font-mono)", width: "calc(100% + 2rem)" }}
+        >
+            <motion.span
+                animate={{ rotate: open ? 90 : 0 }}
+                transition={{ duration: 0.15 }}
+                className="leading-none"
+            >
+                ▸
+            </motion.span>
+            {label}
+        </button>
+    );
+}
+
 function SectionDivider({ label }: { label: string }) {
     return (
         <div className="px-3 py-1.5 text-xs tracking-widest border-y -mx-4 mt-4 mb-3"
@@ -161,23 +210,40 @@ function SectionDivider({ label }: { label: string }) {
 
 // ── Status bar ────────────────────────────────────────────────────────────────
 
-function StatusBar({ msg, savedAt, onClear, showClear }: {
-    msg: { ok: boolean; msg: string } | null; savedAt: string | null; onClear: () => void; showClear: boolean;
+function StatusBar({ msg, savedAt, onClear, showClear, wordCount, liveUrl }: {
+    msg: { ok: boolean; msg: string } | null;
+    savedAt: string | null;
+    onClear: () => void;
+    showClear: boolean;
+    wordCount: number;
+    liveUrl: string | null;
 }) {
     return (
         <div className="flex items-center justify-between px-4 py-1.5 border-t text-xs shrink-0"
             style={{ borderColor: "var(--outline-variant)", background: "var(--surface-container-low)", fontFamily: "var(--font-mono)" }}>
-            <div>
+            <div className="flex items-center gap-3 min-w-0">
                 {msg
                     ? <span style={{ color: msg.ok ? "var(--secondary-container)" : "var(--error)" }}>{msg.msg}</span>
                     : <span style={{ color: "var(--outline)" }}>{savedAt ? `draft saved ${savedAt}` : "ready"}</span>
                 }
+                {msg?.ok && liveUrl && (
+                    <a href={liveUrl} target="_blank" rel="noopener noreferrer"
+                        className="shrink-0 transition-colors hover:text-[var(--primary)]"
+                        style={{ color: "var(--outline)" }}>
+                        ↗ VIEW
+                    </a>
+                )}
             </div>
-            {showClear && (
-                <button onClick={onClear} className="transition-colors hover:text-[var(--error)]" style={{ color: "var(--outline)" }}>
-                    [ CLEAR ]
-                </button>
-            )}
+            <div className="flex items-center gap-4 shrink-0">
+                {wordCount > 0 && (
+                    <span style={{ color: "var(--outline)" }}>{wordCount}w</span>
+                )}
+                {showClear && (
+                    <button onClick={onClear} className="transition-colors hover:text-[var(--error)]" style={{ color: "var(--outline)" }}>
+                        [ CLEAR ]
+                    </button>
+                )}
+            </div>
         </div>
     );
 }
@@ -190,6 +256,7 @@ export default function AdminPanel() {
     const [body, setBody]               = useState("");
     const [editingFile, setEditingFile] = useState<string | null>(null);
     const [status, setStatus]           = useState<{ ok: boolean; msg: string } | null>(null);
+    const [liveUrl, setLiveUrl]         = useState<string | null>(null);
     const [uploading, setUploading]     = useState(false);
     const [savedAt, setSavedAt]         = useState<string | null>(null);
     const [library, setLibrary]         = useState<LibraryItem[]>([]);
@@ -197,6 +264,13 @@ export default function AdminPanel() {
     const [libFilter, setLibFilter]     = useState<string>("all");
     const [libSearch, setLibSearch]     = useState("");
     const [delTarget, setDelTarget]     = useState<LibraryItem | null>(null);
+    const [isDirty, setIsDirty]         = useState(false);
+    const [optionalOpen, setOptionalOpen] = useState(true);
+
+    // Image gallery
+    const [images, setImages]           = useState<ImageItem[]>([]);
+    const [imagesLoading, setImagesLoading] = useState(false);
+    const [galleryOpen, setGalleryOpen] = useState(false);
 
     // Preview pane
     const [showPreview, setShowPreview]     = useState(false);
@@ -208,14 +282,18 @@ export default function AdminPanel() {
     const [metaWidth, setMetaWidth]       = useState(META_DEFAULT);
     const [previewWidth, setPreviewWidth] = useState(PREV_DEFAULT);
 
-    const fileRef       = useRef<HTMLInputElement>(null);
-    const textareaRef   = useRef<HTMLTextAreaElement>(null);
-    const skipSlugRef   = useRef(false);
-    const saveTimeout   = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const previewTimeout= useRef<ReturnType<typeof setTimeout> | null>(null);
+    const fileRef         = useRef<HTMLInputElement>(null);
+    const textareaRef     = useRef<HTMLTextAreaElement>(null);
+    const skipSlugRef     = useRef(false);
+    const saveTimeout     = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const previewTimeout  = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const initialStateRef = useRef<{ form: FormState; body: string } | null>(null);
+    const saveRef         = useRef<() => void>(() => {});
 
     const set = <K extends keyof FormState>(k: K, v: FormState[K]) =>
         setForm((p) => ({ ...p, [k]: v }));
+
+    const wordCount = body.split(/\s+/).filter(Boolean).length;
 
     // ── Draft persistence ────────────────────────────────────────────────────
 
@@ -242,19 +320,59 @@ export default function AdminPanel() {
 
     useEffect(() => { autosave(form, body); }, [form, body, autosave]);
 
-    const clearDraft = () => {
+    const clearDraft = useCallback(() => {
         localStorage.removeItem(STORAGE_KEY);
         setForm({ ...INITIAL, date: today() });
         setBody(""); setSavedAt(null); setStatus(null); setEditingFile(null);
-        setPreviewHtml(""); setPreviewError(null);
-    };
+        setPreviewHtml(""); setPreviewError(null); setLiveUrl(null);
+        setIsDirty(false); initialStateRef.current = null;
+    }, []);
+
+    // ── Dirty tracking ───────────────────────────────────────────────────────
+
+    useEffect(() => {
+        if (!editingFile || !initialStateRef.current) { setIsDirty(false); return; }
+        const init = initialStateRef.current;
+        setIsDirty(body !== init.body || JSON.stringify(form) !== JSON.stringify(init.form));
+    }, [form, body, editingFile]);
+
+    // ── Slug auto-derive ─────────────────────────────────────────────────────
 
     useEffect(() => {
         if (skipSlugRef.current) { skipSlugRef.current = false; return; }
         if (!editingFile) set("slug", toSlug(form.title));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [form.title]);
 
-    useEffect(() => { setStatus(null); }, [form.type]);
+    useEffect(() => { setStatus(null); setLiveUrl(null); }, [form.type]);
+
+    // ── Keyboard shortcuts: Ctrl/Cmd+S to save, Escape to discard edit ───────
+
+    useEffect(() => {
+        saveRef.current = async () => {
+            const ta = textareaRef.current;
+            // Only save when focus is not in textarea or when Ctrl held
+            if (!form.title && !body) return;
+            await handleSave();
+        };
+    });
+
+    useEffect(() => {
+        function onKey(e: KeyboardEvent) {
+            if ((e.metaKey || e.ctrlKey) && e.key === "s") {
+                e.preventDefault();
+                saveRef.current();
+                return;
+            }
+            if (e.key === "Escape" && editingFile) {
+                if (isDirty && !confirm("Discard unsaved changes?")) return;
+                clearDraft();
+            }
+        }
+        window.addEventListener("keydown", onKey);
+        return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [editingFile, isDirty, clearDraft]);
 
     // ── Debounced preview fetch ───────────────────────────────────────────────
 
@@ -284,10 +402,24 @@ export default function AdminPanel() {
         }, 600);
     }, [body, showPreview]);
 
-    // Fetch immediately when preview is toggled on
+    // ── Image gallery ─────────────────────────────────────────────────────────
+
+    const loadImages = useCallback(async () => {
+        setImagesLoading(true);
+        const res = await fetch("/api/admin/images");
+        const data = await res.json();
+        setImages(data.images ?? []);
+        setImagesLoading(false);
+    }, []);
+
     useEffect(() => {
-        if (showPreview && body.trim()) previewTimeout.current && clearTimeout(previewTimeout.current);
-    }, [showPreview]);
+        if (galleryOpen && images.length === 0) loadImages();
+    }, [galleryOpen, images.length, loadImages]);
+
+    function insertImage(imgPath: string) {
+        const snippet: Snippet = { label: "", title: "", text: `![alt text](${imgPath})`, select: [2, 10] };
+        insertSnippet(textareaRef, snippet, body, setBody);
+    }
 
     // ── Library ──────────────────────────────────────────────────────────────
 
@@ -302,13 +434,12 @@ export default function AdminPanel() {
     useEffect(() => { if (view === "library") loadLibrary(); }, [view, loadLibrary]);
 
     async function handleEdit(item: LibraryItem) {
-        setStatus(null);
+        setStatus(null); setLiveUrl(null);
         const res = await fetch(`/api/admin/read?path=${encodeURIComponent(item.filePath)}`);
         if (!res.ok) { setStatus({ ok: false, msg: "Failed to load file." }); return; }
         const { frontmatter: fm, body: fileBody } = await res.json();
 
-        skipSlugRef.current = true;
-        setForm({
+        const loadedForm: FormState = {
             ...INITIAL,
             type:         item.type as ContentType,
             title:        fm.title        ?? "",
@@ -332,9 +463,15 @@ export default function AdminPanel() {
             url:          fm.url          ?? "",
             doi:          fm.doi          ?? "",
             publisher:    fm.publisher    ?? "",
-        });
-        setBody(fileBody ?? "");
+        };
+        const loadedBody = fileBody ?? "";
+
+        skipSlugRef.current = true;
+        setForm(loadedForm);
+        setBody(loadedBody);
         setEditingFile(item.filePath);
+        setIsDirty(false);
+        initialStateRef.current = { form: loadedForm, body: loadedBody };
         setView("compose");
         requestAnimationFrame(() => textareaRef.current?.focus());
     }
@@ -397,6 +534,10 @@ export default function AdminPanel() {
             const data = await res.json();
             if (!res.ok) { setStatus({ ok: false, msg: data.error ?? "Update failed." }); return; }
             setStatus({ ok: true, msg: `✓ Saved: ${data.path}` });
+            setLiveUrl(getLiveUrl(form.type, form.slug, form.subject));
+            // Reset dirty after successful save
+            initialStateRef.current = { form, body };
+            setIsDirty(false);
         } else {
             const res  = await fetch("/api/admin/create", {
                 method: "POST", headers: { "Content-Type": "application/json" },
@@ -405,6 +546,7 @@ export default function AdminPanel() {
             const data = await res.json();
             if (!res.ok) { setStatus({ ok: false, msg: data.error ?? "Create failed." }); return; }
             setStatus({ ok: true, msg: `✓ Created: ${data.path}` });
+            setLiveUrl(getLiveUrl(form.type, form.slug, form.subject));
             localStorage.removeItem(STORAGE_KEY);
             setSavedAt(null);
             setForm({ ...INITIAL, date: today() });
@@ -439,20 +581,30 @@ export default function AdminPanel() {
         navigator.clipboard.writeText(`![alt text](${data.path})`);
         setStatus({ ok: true, msg: `✓ Uploaded ${data.path} — snippet copied.` });
         if (fileRef.current) fileRef.current.value = "";
+        // Refresh gallery if it's open
+        if (galleryOpen) loadImages();
     }
 
     // ── Render ────────────────────────────────────────────────────────────────
 
     const libQuery    = libSearch.toLowerCase().trim();
-    const filteredLib = library.filter((i) => {
-        const matchesType   = libFilter === "all" || i.type === libFilter;
-        const matchesSearch = !libQuery
-            || i.frontmatter.title.toLowerCase().includes(libQuery)
-            || i.slug.toLowerCase().includes(libQuery)
-            || (i.frontmatter.subject ?? "").toLowerCase().includes(libQuery);
-        return matchesType && matchesSearch;
-    });
+    const filteredLib = library
+        .filter((i) => {
+            const matchesType   = libFilter === "all" || i.type === libFilter;
+            const matchesSearch = !libQuery
+                || i.frontmatter.title.toLowerCase().includes(libQuery)
+                || i.slug.toLowerCase().includes(libQuery)
+                || (i.frontmatter.subject ?? "").toLowerCase().includes(libQuery);
+            return matchesType && matchesSearch;
+        })
+        .sort((a, b) => b.frontmatter.date.localeCompare(a.frontmatter.date));
+
     const TAB_TYPES: ContentType[] = ["blog", "project", "garden", "resource"];
+
+    // Compose tab label reflects editing/dirty state
+    const composeLabel = editingFile
+        ? (isDirty ? "COMPOSE ●" : "COMPOSE ○")
+        : "COMPOSE";
 
     return (
         <div className="flex flex-col overflow-hidden"
@@ -475,10 +627,15 @@ export default function AdminPanel() {
                                     color:      view === v ? "var(--primary)" : "var(--on-surface-variant)",
                                     borderRight: i === 0 ? "1px solid var(--outline-variant)" : undefined,
                                 }}>
-                                {v === "compose" ? (editingFile ? "COMPOSE ●" : "COMPOSE") : "LIBRARY"}
+                                {v === "compose" ? composeLabel : "LIBRARY"}
                             </button>
                         ))}
                     </div>
+                    {isDirty && (
+                        <span className="text-xs" style={{ color: "var(--outline)" }}>
+                            unsaved · Ctrl+S to save · Esc to discard
+                        </span>
+                    )}
                 </div>
                 <span className="text-xs tracking-widest" style={{ color: "var(--secondary-container)" }}>● DEV ONLY</span>
             </div>
@@ -497,8 +654,13 @@ export default function AdminPanel() {
 
                             {editingFile && (
                                 <div className="text-xs px-2 py-1.5 border leading-snug"
-                                    style={{ borderColor: "var(--primary)", color: "var(--primary)", background: "rgba(201,131,226,0.06)", wordBreak: "break-all" }}>
-                                    ● {editingFile}
+                                    style={{
+                                        borderColor: isDirty ? "var(--primary)" : "var(--outline-variant)",
+                                        color: isDirty ? "var(--primary)" : "var(--outline)",
+                                        background: isDirty ? "rgba(201,131,226,0.06)" : "transparent",
+                                        wordBreak: "break-all",
+                                    }}>
+                                    {isDirty ? "● " : "○ "}{editingFile}
                                 </div>
                             )}
 
@@ -523,11 +685,14 @@ export default function AdminPanel() {
                             </div>
 
                             <div><SideLabel>TITLE *</SideLabel><FieldInput value={form.title} onChange={(v) => set("title", v)} placeholder="Post title" /></div>
-                            <div><SideLabel>{editingFile ? "SLUG (locked)" : "SLUG"}</SideLabel><FieldInput value={form.slug} onChange={(v) => set("slug", v)} placeholder="post-slug" readOnly={!!editingFile} /></div>
+                            <div>
+                                <SideLabel>{editingFile ? "SLUG (locked)" : "SLUG"}</SideLabel>
+                                <FieldInput value={form.slug} onChange={(v) => set("slug", v)} placeholder="post-slug" readOnly={!!editingFile} tabIndex={editingFile ? -1 : undefined} />
+                            </div>
                             <div><SideLabel>DATE</SideLabel><FieldInput value={form.date} onChange={(v) => set("date", v)} /></div>
 
                             {form.type === "garden" && (
-                                <div><SideLabel>SUBJECT *</SideLabel><FieldInput value={form.subject} onChange={(v) => set("subject", v)} placeholder="ml" readOnly={!!editingFile} /></div>
+                                <div><SideLabel>SUBJECT *</SideLabel><FieldInput value={form.subject} onChange={(v) => set("subject", v)} placeholder="ml" readOnly={!!editingFile} tabIndex={editingFile ? -1 : undefined} /></div>
                             )}
                             {form.type === "project" && (<>
                                 <div><SideLabel>STACK</SideLabel><FieldInput value={form.stack} onChange={(v) => set("stack", v)} placeholder="Next.js, TS" /></div>
@@ -542,38 +707,54 @@ export default function AdminPanel() {
                                 <div><SideLabel>YEAR</SideLabel><FieldInput value={form.year} onChange={(v) => set("year", v)} /></div>
                             </>)}
 
-                            <SectionDivider label="OPTIONAL" />
+                            {/* Collapsible optional section */}
+                            <SectionToggle label="OPTIONAL" open={optionalOpen} onToggle={() => setOptionalOpen((o) => !o)} />
 
-                            <div><SideLabel>SUMMARY</SideLabel><FieldInput value={form.summary} onChange={(v) => set("summary", v)} placeholder="One-liner" /></div>
-                            <div><SideLabel>TAGS</SideLabel><FieldInput value={form.tags} onChange={(v) => set("tags", v)} placeholder="ml, engineering" /></div>
+                            <AnimatePresence initial={false}>
+                                {optionalOpen && (
+                                    <motion.div
+                                        key="optional"
+                                        initial={{ height: 0, opacity: 0 }}
+                                        animate={{ height: "auto", opacity: 1 }}
+                                        exit={{ height: 0, opacity: 0 }}
+                                        transition={{ duration: 0.18, ease: "easeInOut" }}
+                                        style={{ overflow: "hidden" }}
+                                        className="space-y-3"
+                                    >
+                                        <div><SideLabel>SUMMARY</SideLabel><FieldInput value={form.summary} onChange={(v) => set("summary", v)} placeholder="One-liner" /></div>
+                                        <div><SideLabel>TAGS</SideLabel><FieldInput value={form.tags} onChange={(v) => set("tags", v)} placeholder="ml, engineering" /></div>
 
-                            {(form.type === "blog" || form.type === "project") && (
-                                <div><SideLabel>COVER</SideLabel><FieldInput value={form.cover} onChange={(v) => set("cover", v)} placeholder="/covers/img.jpg" /></div>
-                            )}
-                            {form.type === "project" && (<>
-                                <div><SideLabel>DEMO</SideLabel><FieldInput value={form.demo} onChange={(v) => set("demo", v)} placeholder="https://..." /></div>
-                                <div><SideLabel>REPO</SideLabel><FieldInput value={form.repo} onChange={(v) => set("repo", v)} placeholder="https://github.com/..." /></div>
-                                <div><SideLabel>EXCALIDRAW</SideLabel><FieldInput value={form.excalidraw} onChange={(v) => set("excalidraw", v)} placeholder="/diagrams/x.excalidraw" /></div>
-                                <div>
-                                    <label className="flex items-center gap-2 cursor-pointer">
-                                        <input type="checkbox" checked={form.featured} onChange={(e) => set("featured", e.target.checked)} className="accent-[var(--primary)]" />
-                                        <span className="text-xs" style={{ color: "var(--on-surface-variant)" }}>FEATURED</span>
-                                    </label>
-                                </div>
-                            </>)}
-                            {form.type === "resource" && (<>
-                                <div><SideLabel>URL</SideLabel><FieldInput value={form.url} onChange={(v) => set("url", v)} placeholder="https://..." /></div>
-                                <div><SideLabel>DOI</SideLabel><FieldInput value={form.doi} onChange={(v) => set("doi", v)} placeholder="10.48550/..." /></div>
-                                <div><SideLabel>PUBLISHER</SideLabel><FieldInput value={form.publisher} onChange={(v) => set("publisher", v)} placeholder="NeurIPS" /></div>
-                            </>)}
+                                        {(form.type === "blog" || form.type === "project") && (
+                                            <div><SideLabel>COVER</SideLabel><FieldInput value={form.cover} onChange={(v) => set("cover", v)} placeholder="/covers/img.jpg" /></div>
+                                        )}
+                                        {form.type === "project" && (<>
+                                            <div><SideLabel>DEMO</SideLabel><FieldInput value={form.demo} onChange={(v) => set("demo", v)} placeholder="https://..." /></div>
+                                            <div><SideLabel>REPO</SideLabel><FieldInput value={form.repo} onChange={(v) => set("repo", v)} placeholder="https://github.com/..." /></div>
+                                            <div><SideLabel>EXCALIDRAW</SideLabel><FieldInput value={form.excalidraw} onChange={(v) => set("excalidraw", v)} placeholder="/diagrams/x.excalidraw" /></div>
+                                            <div>
+                                                <label className="flex items-center gap-2 cursor-pointer">
+                                                    <input type="checkbox" checked={form.featured} onChange={(e) => set("featured", e.target.checked)} className="accent-[var(--primary)]" />
+                                                    <span className="text-xs" style={{ color: "var(--on-surface-variant)" }}>FEATURED</span>
+                                                </label>
+                                            </div>
+                                        </>)}
+                                        {form.type === "resource" && (<>
+                                            <div><SideLabel>URL</SideLabel><FieldInput value={form.url} onChange={(v) => set("url", v)} placeholder="https://..." /></div>
+                                            <div><SideLabel>DOI</SideLabel><FieldInput value={form.doi} onChange={(v) => set("doi", v)} placeholder="10.48550/..." /></div>
+                                            <div><SideLabel>PUBLISHER</SideLabel><FieldInput value={form.publisher} onChange={(v) => set("publisher", v)} placeholder="NeurIPS" /></div>
+                                        </>)}
 
-                            <div>
-                                <label className="flex items-center gap-2 cursor-pointer">
-                                    <input type="checkbox" checked={form.draft} onChange={(e) => set("draft", e.target.checked)} className="accent-[var(--primary)]" />
-                                    <span className="text-xs" style={{ color: "var(--on-surface-variant)" }}>DRAFT</span>
-                                </label>
-                            </div>
+                                        <div>
+                                            <label className="flex items-center gap-2 cursor-pointer">
+                                                <input type="checkbox" checked={form.draft} onChange={(e) => set("draft", e.target.checked)} className="accent-[var(--primary)]" />
+                                                <span className="text-xs" style={{ color: "var(--on-surface-variant)" }}>DRAFT</span>
+                                            </label>
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
 
+                            {/* Image section */}
                             <SectionDivider label="IMAGE" />
                             <div className="flex items-center gap-2">
                                 <input ref={fileRef} type="file" accept="image/*" onChange={handleUpload} className="hidden" id="img-upload" />
@@ -582,8 +763,57 @@ export default function AdminPanel() {
                                     style={{ borderColor: "var(--outline-variant)", color: "var(--on-surface-variant)" }}>
                                     {uploading ? "UPLOADING…" : "UPLOAD"}
                                 </label>
-                                <span className="text-xs" style={{ color: "var(--outline)" }}>snippet → clipboard</span>
+                                <button
+                                    onClick={() => setGalleryOpen((o) => !o)}
+                                    className="text-xs px-3 py-1.5 border transition-colors hover:border-[var(--primary)] hover:text-[var(--primary)]"
+                                    style={{
+                                        borderColor: galleryOpen ? "var(--primary)" : "var(--outline-variant)",
+                                        color:       galleryOpen ? "var(--primary)" : "var(--on-surface-variant)",
+                                    }}>
+                                    GALLERY
+                                </button>
                             </div>
+
+                            {/* Image gallery */}
+                            <AnimatePresence initial={false}>
+                                {galleryOpen && (
+                                    <motion.div
+                                        key="gallery"
+                                        initial={{ height: 0, opacity: 0 }}
+                                        animate={{ height: "auto", opacity: 1 }}
+                                        exit={{ height: 0, opacity: 0 }}
+                                        transition={{ duration: 0.18, ease: "easeInOut" }}
+                                        style={{ overflow: "hidden" }}
+                                    >
+                                        <div className="flex items-center justify-between mb-2">
+                                            <span className="text-xs" style={{ color: "var(--outline)" }}>click to insert</span>
+                                            <button onClick={loadImages} className="text-xs transition-colors hover:text-[var(--primary)]" style={{ color: "var(--outline)" }}>↻</button>
+                                        </div>
+                                        {imagesLoading && (
+                                            <p className="text-xs" style={{ color: "var(--outline)" }}>LOADING…</p>
+                                        )}
+                                        {!imagesLoading && images.length === 0 && (
+                                            <p className="text-xs" style={{ color: "var(--outline)" }}>No images in public/images/</p>
+                                        )}
+                                        {!imagesLoading && images.length > 0 && (
+                                            <div className="grid grid-cols-3 gap-1">
+                                                {images.map((img) => (
+                                                    <button
+                                                        key={img.path}
+                                                        onClick={() => insertImage(img.path)}
+                                                        title={img.name}
+                                                        className="aspect-square overflow-hidden border transition-colors hover:border-[var(--primary)]"
+                                                        style={{ borderColor: "var(--outline-variant)" }}
+                                                    >
+                                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                        <img src={img.path} alt={img.name} className="w-full h-full object-cover" />
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
                         </div>
 
                         {/* Action buttons */}
@@ -608,18 +838,45 @@ export default function AdminPanel() {
                     <div className="flex-1 flex flex-col min-w-0">
 
                         {/* Toolbar */}
-                        <div className="flex flex-wrap items-center gap-1 px-3 py-2 border-b shrink-0"
+                        <div className="flex flex-wrap items-center gap-0.5 px-3 py-2 border-b shrink-0"
                             style={{ borderColor: "var(--outline-variant)", background: "var(--surface-container)" }}>
-                            {SNIPPETS.map((s) => (
-                                <button key={s.label} type="button" title={s.title}
-                                    onClick={() => insertSnippet(textareaRef, s, body, setBody)}
-                                    className="px-2 py-0.5 text-xs border transition-colors hover:border-[var(--primary)] hover:text-[var(--primary)] active:scale-95"
-                                    style={{ borderColor: "var(--outline-variant)", color: "var(--on-surface-variant)", fontFamily: "var(--font-mono)" }}>
-                                    {s.label}
-                                </button>
-                            ))}
+                            {SNIPPET_GROUPS.map((s, i) =>
+                                s === null ? (
+                                    /* Group divider */
+                                    <span key={`div-${i}`} className="shrink-0 mx-0.5"
+                                        style={{ width: 1, height: 18, background: "var(--outline-variant)", display: "inline-block" }} />
+                                ) : (
+                                    <button key={s.label} type="button" title={`${s.title}`}
+                                        onClick={() => insertSnippet(textareaRef, s, body, setBody)}
+                                        className="group inline-flex items-center justify-center gap-1 border transition-all active:scale-95"
+                                        style={{
+                                            padding:     s.icon ? "4px 6px" : "2px 7px",
+                                            borderColor: "var(--outline-variant)",
+                                            color:       "var(--on-surface-variant)",
+                                            fontFamily:  "var(--font-mono)",
+                                            fontSize:    10,
+                                            lineHeight:  1,
+                                            // CSS custom prop for per-button accent color
+                                            ["--tb-accent" as string]: s.accent ?? "var(--primary)",
+                                        }}
+                                        onMouseEnter={(e) => {
+                                            (e.currentTarget as HTMLElement).style.borderColor = s.accent ?? "var(--primary)";
+                                            (e.currentTarget as HTMLElement).style.color       = s.accent ?? "var(--primary)";
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            (e.currentTarget as HTMLElement).style.borderColor = "var(--outline-variant)";
+                                            (e.currentTarget as HTMLElement).style.color       = "var(--on-surface-variant)";
+                                        }}
+                                    >
+                                        {s.icon && <span className="shrink-0 leading-none">{s.icon}</span>}
+                                        {/* Show text label only for math / bracket entries that are self-documenting */}
+                                        {(!s.icon || ["$$", "$x$", "[[]]"].includes(s.label)) && (
+                                            <span style={{ letterSpacing: 0 }}>{s.label}</span>
+                                        )}
+                                    </button>
+                                )
+                            )}
 
-                            {/* spacer */}
                             <div className="flex-1" />
 
                             {/* Preview toggle */}
@@ -645,7 +902,14 @@ export default function AdminPanel() {
                             style={{ color: "var(--on-surface)" }}
                         />
 
-                        <StatusBar msg={status} savedAt={savedAt} onClear={clearDraft} showClear={!!(form.title || body)} />
+                        <StatusBar
+                            msg={status}
+                            savedAt={savedAt}
+                            onClear={clearDraft}
+                            showClear={!!(form.title || body)}
+                            wordCount={wordCount}
+                            liveUrl={liveUrl}
+                        />
                     </div>
 
                     {/* Resize handle — editor / preview (only when preview is open) */}
@@ -658,7 +922,6 @@ export default function AdminPanel() {
                         <div className="flex flex-col border-l shrink-0 overflow-hidden"
                             style={{ width: previewWidth, borderColor: "var(--outline-variant)", background: "var(--surface-container-low)" }}>
 
-                            {/* Preview header */}
                             <div className="flex items-center justify-between px-3 py-2 border-b shrink-0"
                                 style={{ borderColor: "var(--outline-variant)", background: "var(--surface-container)" }}>
                                 <span className="text-xs tracking-widest" style={{ color: "var(--on-surface-variant)" }}>
@@ -669,7 +932,6 @@ export default function AdminPanel() {
                                 )}
                             </div>
 
-                            {/* Preview content */}
                             <div className="flex-1 overflow-y-auto px-6 py-6">
                                 {previewError ? (
                                     <pre className="text-xs whitespace-pre-wrap" style={{ color: "var(--error)", fontFamily: "var(--font-mono)" }}>
@@ -752,7 +1014,7 @@ export default function AdminPanel() {
                                         {item.frontmatter.date}{item.frontmatter.subject && ` · ${item.frontmatter.subject}`}
                                     </div>
                                 </div>
-                                <div className="flex gap-2 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <div className="flex gap-2 shrink-0 opacity-30 group-hover:opacity-100 transition-opacity">
                                     <button onClick={() => handleEdit(item)}
                                         className="text-xs px-2 py-1 border transition-colors hover:border-[var(--primary)] hover:text-[var(--primary)]"
                                         style={{ borderColor: "var(--outline-variant)", color: "var(--on-surface-variant)" }}>
@@ -768,7 +1030,7 @@ export default function AdminPanel() {
                         ))}
                     </div>
 
-                    <StatusBar msg={status} savedAt={null} onClear={() => setStatus(null)} showClear={!!status} />
+                    <StatusBar msg={status} savedAt={null} onClear={() => setStatus(null)} showClear={!!status} wordCount={0} liveUrl={null} />
                 </div>
             )}
 

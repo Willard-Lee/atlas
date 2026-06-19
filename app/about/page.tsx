@@ -2,6 +2,34 @@ import { socialLinks } from "@/lib/links";
 import FadeUp from "@/components/motion/FadeUp";
 import BootSequence from "@/components/motion/BootSequence";
 import AnimatedBar from "@/components/motion/AnimatedBar";
+import ReactCountryFlag from "react-country-flag";
+import {
+    SiPython, SiTypescript, SiR, SiCplusplus, SiOpenjdk,
+    SiPytorch, SiHuggingface, SiScikitlearn,
+    SiPandas, SiNumpy, SiPolars, SiJupyter,
+    SiNextdotjs, SiReact, SiTailwindcss,
+} from "react-icons/si";
+import { FaDatabase, FaLink } from "react-icons/fa6";
+
+const techIcons: Record<string, { icon: React.ReactNode; color: string }> = {
+    "Python":       { icon: <SiPython      size={16} />, color: "#3776AB" },
+    "TypeScript":   { icon: <SiTypescript  size={16} />, color: "#3178C6" },
+    "R":            { icon: <SiR           size={16} />, color: "#276DC3" },
+    "SQL":          { icon: <FaDatabase    size={15} />, color: "#4479A1" },
+    "C++":          { icon: <SiCplusplus   size={16} />, color: "#00599C" },
+    "Java":         { icon: <SiOpenjdk     size={16} />, color: "#e76f00" },
+    "PyTorch":      { icon: <SiPytorch     size={16} />, color: "#EE4C2C" },
+    "HuggingFace":  { icon: <SiHuggingface size={16} />, color: "#FFD21E" },
+    "LangChain":    { icon: <FaLink        size={15} />, color: "#1CD3A2" },
+    "scikit-learn": { icon: <SiScikitlearn size={16} />, color: "#F7931E" },
+    "Pandas":       { icon: <SiPandas      size={16} />, color: "#E70488" },
+    "NumPy":        { icon: <SiNumpy       size={16} />, color: "#4DABCF" },
+    "Polars":       { icon: <SiPolars      size={16} />, color: "#CD4624" },
+    "Jupyter":      { icon: <SiJupyter     size={16} />, color: "#F37626" },
+    "Next.js":      { icon: <SiNextdotjs   size={16} />, color: "#ffffff" },
+    "React":        { icon: <SiReact       size={16} />, color: "#61DAFB" },
+    "Tailwind":     { icon: <SiTailwindcss size={16} />, color: "#06B6D4" },
+};
 
 const skills: Record<string, { name: string; level: number }[]> = {
     "LANGUAGES": [
@@ -72,11 +100,11 @@ const bootLines = [
 ];
 
 const languages = [
-    { code: "EN",  name: "English",  level: "NATIVE",         bars: 9  },
-    { code: "MS",  name: "Malay",    level: "FLUENT",         bars: 7 },
-    { code: "ZH",  name: "Mandarin", level: "CONVERSATIONAL", bars: 5  },
-    { code: "TA", name: "TAMIL",  level: "BEGINNER",          bars: 3 },
-    { code: "FR", name: "FRENCH",  level: "LEARNING",          bars: 1 },
+    { code: "EN", country: "GB", name: "English",  level: "NATIVE",         bars: 9 },
+    { code: "MS", country: "MY", name: "Malay",    level: "FLUENT",         bars: 7 },
+    { code: "ZH", country: "CN", name: "Mandarin", level: "CONVERSATIONAL", bars: 5 },
+    { code: "TA", country: "IN", name: "Tamil",    level: "BEGINNER",       bars: 3 },
+    { code: "FR", country: "FR", name: "French",   level: "LEARNING",       bars: 1 },
 ] as const;
 
 function langColor(level: string) {
@@ -273,7 +301,7 @@ export default function AboutPage() {
                                             </div>
                                         </div>
 
-                                        {/* Skill rows — row highlights on hover */}
+                                        {/* Skill rows */}
                                         <div className="divide-y overflow-x-auto" style={{ borderColor: "var(--outline-variant)" }}>
                                             {items.map(({ name, level }, itemIdx) => {
                                                 const filled = Math.round(level / 10);
@@ -284,10 +312,18 @@ export default function AboutPage() {
                                                     <div key={name}
                                                          className="group grid gap-3 px-4 py-2.5 transition-colors hover:bg-[var(--surface-container-high)] cursor-default"
                                                          style={{ gridTemplateColumns: "11rem 6.5rem 1fr auto" }}>
-                                                        <span className="font-mono text-xs truncate transition-colors duration-150 group-hover:text-[var(--on-surface)]"
+                                                        <span className="font-mono text-xs flex items-center gap-2 min-w-0 transition-colors duration-150 group-hover:text-[var(--on-surface)]"
                                                               style={{ color: isTop ? color : "var(--on-surface)" }}>
                                                             {isTop && <span style={{ color }}>▶ </span>}
-                                                            {name}
+                                                            {techIcons[name] && (
+                                                                <span
+                                                                    className="tech-icon"
+                                                                    style={{ "--ti-color": techIcons[name].color } as React.CSSProperties}
+                                                                >
+                                                                    {techIcons[name].icon}
+                                                                </span>
+                                                            )}
+                                                            <span className="truncate">{name}</span>
                                                         </span>
                                                         <span className="font-mono text-xs transition-colors duration-150"
                                                               style={{ color: pColor }}>
@@ -326,15 +362,21 @@ export default function AboutPage() {
 
                         {/* Language cards — lift + subtle border brightens on hover */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            {languages.map(({ code, name, level, bars }, langIdx) => {
+                            {languages.map(({ code, country, name, level, bars }, langIdx) => {
                                 const color = langColor(level);
                                 return (
                                     <div key={code}
                                          className="group flex items-center gap-3 border px-4 py-3 scannable transition-all duration-150 hover:-translate-y-0.5 hover:bg-[var(--surface-container-high)] cursor-default"
                                          style={{ borderColor: "var(--outline-variant)", borderLeftColor: color, borderLeftWidth: "2px" }}>
-                                        {/* ISO code badge — brightens on hover */}
-                                        <span className="font-mono text-xs px-1.5 py-0.5 shrink-0 w-10 text-center transition-colors duration-150 group-hover:bg-[var(--surface-container-highest)]"
+                                        {/* Flag + ISO badge */}
+                                        <span className="font-mono text-xs px-1.5 py-0.5 shrink-0 flex items-center gap-1.5 transition-colors duration-150 group-hover:bg-[var(--surface-container-highest)]"
                                               style={{ background: "var(--surface-container-high)", color }}>
+                                            <ReactCountryFlag
+                                                countryCode={country}
+                                                svg
+                                                style={{ width: "1.1em", height: "1.1em", display: "block" }}
+                                                aria-label={name}
+                                            />
                                             {code}
                                         </span>
                                         {/* Name */}

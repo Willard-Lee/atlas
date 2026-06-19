@@ -440,3 +440,63 @@ body {
 .callout-caution  .callout-title { color: var(--error); }
 
 /* .glow is handled by @utility glow above */
+
+/* ── Tech icon chips (skill matrix) ─────────────────────────────────────── */
+
+.tech-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  color: var(--ti-color);
+  background: color-mix(in srgb, var(--ti-color) 14%, var(--surface-container-low));
+  border: 1px solid color-mix(in srgb, var(--ti-color) 38%, transparent);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--ti-color) 22%, transparent),
+    0 0 10px color-mix(in srgb, var(--ti-color) 14%, transparent);
+  transition: filter 0.15s ease, box-shadow 0.15s ease;
+}
+.group:hover .tech-icon {
+  filter: brightness(1.25);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--ti-color) 28%, transparent),
+    0 0 16px color-mix(in srgb, var(--ti-color) 28%, transparent);
+}
+
+/* ── Social icon 3D buttons ─────────────────────────────────────────────── */
+
+.social-icon-3d {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  color: #ffffff;
+  background: linear-gradient(160deg, var(--icon-highlight) 0%, var(--icon-bg) 65%);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.18),
+    inset 0 -1px 0 rgba(0,0,0,0.25),
+    0 4px 0 0 var(--icon-depth),
+    0 6px 14px rgba(0,0,0,0.5);
+  transition: transform 0.09s ease, box-shadow 0.09s ease;
+  cursor: pointer;
+  user-select: none;
+}
+.social-icon-3d:hover {
+  transform: translateY(2px);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.18),
+    inset 0 -1px 0 rgba(0,0,0,0.25),
+    0 2px 0 0 var(--icon-depth),
+    0 4px 8px rgba(0,0,0,0.4);
+}
+.social-icon-3d:active {
+  transform: translateY(4px);
+  box-shadow:
+    inset 0 1px 0 rgba(0,0,0,0.1),
+    inset 0 2px 4px rgba(0,0,0,0.3),
+    0 0px 0 0 var(--icon-depth),
+    0 1px 4px rgba(0,0,0,0.3);
+}

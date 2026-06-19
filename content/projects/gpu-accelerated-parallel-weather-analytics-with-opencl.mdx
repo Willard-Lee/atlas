@@ -1,0 +1,30 @@
+---
+title: "GPU-Accelerated Parallel Weather Analytics with OpenCL"
+date: "2026-06-19"
+draft: true
+summary: "Built a GPU-accelerated OpenCL tool to perform parallel statistical analysis on Brazilian weather station temperature records."
+tags: ["parallel-computing", "opencl"]
+stack: ["C/C++", "Python"]
+status: "wip"
+featured: false
+---
+
+## Overview
+A high-performance CLI tool that process large-scale climate datasets using parallel computing on GPU hardware (OpenCL). The system analyses about 18k+ air temperature readings collected across 21+ years from 5 weather stations in Brazil, this assignment aims to deliver statistical insights that would be impractically slow on a single CPU core.
+
+## Problemoo 
+Processing over 18k temperature readings sequentially is computationally expensive, imagine 1 million reading! A typical single-threaded approaches will TAKE AGES for real-time or interactive analysis [ 10 hours later... ]. The challenge was to design and implement parallel algorithms that can distribute the workload across GPU cores to reduce computation time.
+
+## Solution
+This assignment main objectives is to develop a menu-drive CLI tool in OpenCl that offloads statistical computation to the GPU. The tool reads the dataset, and distributes processing across parallel work items, and returns the statistical summaries like usain bolt compared to a high school runner (speed analogy).
+
+## Tech Stack ( What I Use To Develop It)
+
+| Layer | Technology |
+|-------|-------|
+| Parallel Computing  | OpenCL framework |
+| Language  | C/C++ |
+| Data Visualisation | Python & Console Plots (ASCII) |
+| Dataset | brazil_temp_short.csv | 
+
+
