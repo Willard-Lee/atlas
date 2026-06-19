@@ -37,7 +37,7 @@ export default function Navigation() {
                                     style={{
                                         color: isActive(link.href) ? "var(--primary)" : "var(--on-surface-variant)",
                                         filter: isActive(link.href)
-                                            ? "drop-shadow(0 0 8px var(--primary-container))"
+                                            ? "drop-shadow(0 0 5px rgba(201, 131, 226, 0.35))"
                                             : "none",
                                     }}
                                 >

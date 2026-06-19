@@ -110,7 +110,7 @@ export default function Search({ isOpen, onClose }: SearchProps) {
                         overlay div below and trigger onClose correctly */}
                     <div
                         className="absolute inset-0 pointer-events-none"
-                        style={{ background: "rgba(14, 11, 20, 0.85)" }}
+                        style={{ background: "rgba(11, 14, 28, 0.85)" }}
                     />
 
                     {/* Invisible full-area click target for close-on-backdrop-click */}
