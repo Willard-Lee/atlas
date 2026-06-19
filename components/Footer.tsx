@@ -57,6 +57,12 @@ export default function Footer() {
                 </ul>
             </div>
 
+            {/* Build notice */}
+            <div className="px-8 pb-1 font-mono text-xs flex items-center gap-2" style={{ color: "var(--outline)" }}>
+                <span style={{ color: "var(--primary)", animation: "blink 1.4s step-end infinite" }}>■</span>
+                PERPETUAL_BUILD — this site is always under construction. design and content iterate continuously.
+            </div>
+
             {/* Copyright */}
             <div className="px-8 pb-4 font-mono text-xs" style={{ color: "var(--on-surface-variant)" }}>
                 © {new Date().getFullYear()} Willard Lee · All rights reserved.
