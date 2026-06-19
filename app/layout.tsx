@@ -3,6 +3,9 @@ import { Syne, DM_Sans, JetBrains_Mono } from "next/font/google"
 import Providers from "@/components/Providers"
 import Navigation from "@/components/Navigation"
 import Footer from "@/components/Footer"
+import BackToTop from "@/components/BackToTop"
+import PageTransition from "@/components/motion/PageTransition"
+import Cursor from "@/components/Cursor"
 import "@/styles/globals.css"
 
 // ── Fonts ────────────────────────────────────────────────────────────────────
@@ -53,9 +56,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                     <a href="#main" className="sr-only focus:not-sr-only">Skip to content</a>
                     <Navigation />
                     <main id="main" className="flex-1">
-                        {children}
+                        <PageTransition>{children}</PageTransition>
                     </main>
                     <Footer />
+                    <BackToTop />
+                    <Cursor />
                 </Providers>
             </body>
         </html>

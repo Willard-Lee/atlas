@@ -22,7 +22,7 @@ export interface ProjectFrontmatter extends BaseFrontmatter {
     repo? : string;
     cover? : string;
     featured? : boolean;
-    
+    excalidraw?: string;
 }
 
 export interface NoteFrontmatter extends BaseFrontmatter {
