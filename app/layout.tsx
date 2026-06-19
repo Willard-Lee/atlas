@@ -7,6 +7,7 @@ import BackToTop from "@/components/BackToTop"
 import PageTransition from "@/components/motion/PageTransition"
 import Cursor from "@/components/Cursor"
 import "@/styles/globals.css"
+import "katex/dist/katex.min.css"
 
 // ── Fonts ────────────────────────────────────────────────────────────────────
 // Variable names must match what globals.css @theme inline references

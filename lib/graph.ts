@@ -2,14 +2,12 @@ import type { Entry } from "./types";
 import { getAllEntries } from "./content";
 import { visit } from "unist-util-visit";
 
-
 let _slug: Map<string, string> | null = null;
 export function slugMap() {
     return (_slug ??= new Map(getAllEntries().map((e) => [e.slug, e.url])));
 }
 
-//Rewrites [[slug | label ]] into real link nodes during compilation
-export function remarkWikiLink(){
+export function remarkWikiLink() {
     const map = slugMap();
     return (tree: any) => visit(tree, "text", (node: any, i: number | undefined, parent:any) => {
         const re = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;

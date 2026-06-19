@@ -38,10 +38,15 @@ export default function LatestPosts() {
             </div>
 
             <StaggerContainer className="space-y-0">
-                {posts.map((post) => (
+                {posts.map((post) => {
+                    const href       = post.frontmatter.external_url ?? post.url;
+                    const isExternal = !!post.frontmatter.external_url;
+                    return (
                     <StaggerItem key={post.slug}>
                         <Link
-                            href={post.url}
+                            href={href}
+                            target={isExternal ? "_blank" : undefined}
+                            rel={isExternal ? "noopener noreferrer" : undefined}
                             className="group flex items-baseline gap-3 py-3 border-b transition-colors hover:bg-[var(--surface-container)]"
                             style={{ borderColor: "var(--outline-variant)" }}
                         >
@@ -70,7 +75,8 @@ export default function LatestPosts() {
                             </div>
                         </Link>
                     </StaggerItem>
-                ))}
+                    );
+                })}
             </StaggerContainer>
 
         </section>

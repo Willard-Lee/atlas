@@ -45,41 +45,43 @@ export default async function NotePage({ params }: { params: Promise<{ subject: 
         <main className="w-full">
             <ReadingProgress />
 
-            {/* Hero header */}
-            <div className="dot-grid px-8 md:px-16 py-16 mb-0">
-                <div className="flex items-center gap-2 mb-4">
-                    <Link href="/garden"
-                          className="font-mono text-xs tracking-widest transition-colors hover:text-[var(--primary)]"
-                          style={{ color: "var(--on-surface-variant)" }}>
-                        LATENT.NODES
-                    </Link>
-                    <span className="font-mono text-xs" style={{ color: "var(--outline)" }}>/</span>
-                    <Link href={`/garden`}
-                          className="font-mono text-xs tracking-widest transition-colors hover:text-[var(--primary)]"
-                          style={{ color: "var(--on-surface-variant)" }}>
-                        {note.frontmatter.subject.toUpperCase()}
-                    </Link>
+            {/* Hero header — dot-grid full-bleed, inner content width-locked to body */}
+            <div className="dot-grid py-16 mb-0">
+                <div className="max-w-6xl mx-auto px-6 md:px-8">
+                    <div className="flex items-center gap-2 mb-4">
+                        <Link href="/garden"
+                              className="font-mono text-xs tracking-widest transition-colors hover:text-[var(--primary)]"
+                              style={{ color: "var(--on-surface-variant)" }}>
+                            LATENT.NODES
+                        </Link>
+                        <span className="font-mono text-xs" style={{ color: "var(--outline)" }}>/</span>
+                        <Link href="/garden"
+                              className="font-mono text-xs tracking-widest transition-colors hover:text-[var(--primary)]"
+                              style={{ color: "var(--on-surface-variant)" }}>
+                            {note.frontmatter.subject.toUpperCase()}
+                        </Link>
+                    </div>
+
+                    <div className="flex items-center gap-2 mb-4">
+                        <span className="font-mono text-xs" style={{ color }}>■</span>
+                        <span className="font-mono text-xs tracking-widest px-2 py-0.5 border"
+                              style={{ color, borderColor: color }}>
+                            {note.frontmatter.maturity.toUpperCase()}
+                        </span>
+                    </div>
+
+                    <h1 className="font-display text-4xl md:text-5xl font-bold mb-4 break-words" style={{ color: "var(--on-surface)" }}>
+                        {note.frontmatter.title}
+                    </h1>
+
+                    <p className="font-mono text-xs tracking-widest" style={{ color: "var(--on-surface-variant)" }}>
+                        {note.frontmatter.date} · {readingTime} min read
+                    </p>
                 </div>
-
-                <div className="flex items-center gap-2 mb-4">
-                    <span className="font-mono text-xs" style={{ color }}>■</span>
-                    <span className="font-mono text-xs tracking-widest px-2 py-0.5 border"
-                          style={{ color, borderColor: color }}>
-                        {note.frontmatter.maturity.toUpperCase()}
-                    </span>
-                </div>
-
-                <h1 className="font-display text-5xl font-bold mb-4" style={{ color: "var(--on-surface)" }}>
-                    {note.frontmatter.title}
-                </h1>
-
-                <p className="font-mono text-xs tracking-widest" style={{ color: "var(--on-surface-variant)" }}>
-                    {note.frontmatter.date} · {readingTime} min read
-                </p>
             </div>
 
-            {/* Two-column body */}
-            <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-[1fr_240px] gap-12 px-8 md:px-16 pb-24 pt-10">
+            {/* Two-column body — max-w matches hero inner so left edges align */}
+            <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-12 px-6 md:px-8 pb-24 pt-10">
 
                 {/* ── Main content ── */}
                 <div className="min-w-0">

@@ -1,0 +1,134 @@
+---
+title: "Atlas.sys — Personal Knowledge OS"
+date: "2026-06-01"
+updated: "2026-06-19"
+summary: "A graph-linked, terminal-aesthetic personal site built on Next.js, MDX, and Tailwind v4. The site you are looking at right now."
+tags: ["engineering", "web", "ml"]
+stack:
+  ["Next.js 16", "TypeScript", "MDX", "Tailwind v4", "Framer Motion", "Vercel"]
+status: "wip"
+demo: "https://atlas.willardlee.dev"
+repo: "https://github.com/Willard-Lee/atlas"
+cover: ""
+featured: true
+draft: false
+excalidraw: "/diagrams/atlas-architecture.excalidraw"
+---
+
+## Overview
+
+Atlas is a statically generated personal site built around a graph-linking system — every note, post, and project can reference any other via `[[wikilinks]]`, and backlinks are discovered automatically at build time. No CMS, no database, no runtime.
+
+The full design rationale is in [[building-atlas-sys|the build write-up]].
+
+> [!NOTE] You are reading the live version
+> This project page is itself rendered by Atlas. Meta.
+
+## Architecture
+
+The system has four layers:
+
+### Content layer
+
+All content lives in `.mdx` files under `content/`. There are four content types, each with its own frontmatter schema.
+
+```
+content/
+  blog/            ← PostFrontmatter
+  projects/        ← ProjectFrontmatter
+  garden/{subject}/  ← NoteFrontmatter
+  resources/       ← ResourceFrontmatter
+```
+
+### Compilation layer
+
+MDX files are compiled at build time by `next-mdx-remote/rsc`. The pipeline:
+
+```typescript
+await compileMDX({
+  source,
+  options: {
+    mdxOptions: {
+      remarkPlugins: [remarkGfm, remarkWikiLink],
+      rehypePlugins: [
+        rehypeSlug,
+        [rehypeAutolinkHeadings, { behavior: "wrap" }],
+        [rehypePrettyCode, { theme: "github-dark-dimmed" }],
+        rehypeCallouts,
+      ],
+    },
+  },
+});
+```
+
+> [!TIP] Server Components only
+> `next-mdx-remote/rsc` compiles MDX on the server. The rendered output is a React Server Component tree — no client bundle overhead for the content itself.
+
+### Graph layer
+
+At build time, every entry's raw source is scanned for links. A forward-map and back-map are built once and cached at module level.
+
+```typescript
+export function graph() {
+  if (_graph) return _graph;
+  // scan all entries for [[wikilinks]] and /internal/md/links
+  const forward = buildForwardMap(getAllEntries());
+  const back = invertMap(forward);
+  return (_graph = { forward, back });
+}
+```
+
+The graph powers three sidebar features: **Backlinks**, **Related** (tag-overlap scoring), and the **Contents** (TOC from heading extraction).
+
+### Render layer
+
+Each content type has a dedicated Next.js App Router page with a two-column layout: main article + sticky sidebar. The sidebar auto-populates from frontmatter metadata and graph data — no manual configuration needed.
+
+> [!IMPORTANT] Static generation only
+> `generateStaticParams` runs at build time. Adding new content requires a redeploy. On Vercel this takes ~30 seconds after `git push`.
+
+## Feature matrix
+
+| Feature               | Blog | Project | Garden | Resource |
+| --------------------- | ---- | ------- | ------ | -------- |
+| Cover image           | ✓    | ✓       | —      | —        |
+| Table of contents     | ✓    | ✓       | ✓      | ✓        |
+| Backlinks             | ✓    | ✓       | ✓      | ✓        |
+| Related content       | ✓    | ✓       | ✓      | ✓        |
+| Wikilinks             | ✓    | ✓       | ✓      | ✓        |
+| Callouts              | ✓    | ✓       | ✓      | ✓        |
+| Excalidraw embed      | —    | ✓       | —      | —        |
+| External URL redirect | ✓    | —       | —      | —        |
+| Category badge        | ✓    | —       | —      | —        |
+| Maturity level        | —    | —       | ✓      | —        |
+| Stack sidebar         | —    | ✓       | —      | —        |
+| Demo / Repo links     | —    | ✓       | —      | —        |
+
+## ML integration roadmap
+
+This is where the finance × ML angle comes in. The knowledge graph already exists structurally — the next step is making it _queryable_.
+
+See [[transformer-attention]] for the theoretical background on the attention mechanism I plan to use for semantic search.
+
+- [x] Keyword tag-based related content
+- [x] Graph-based backlink discovery
+- [ ] Embedding-based semantic similarity (sentence-transformers)
+- [ ] Vector store for full-text semantic search
+- [ ] LLM-powered Q&A over the knowledge graph
+
+> [!WARNING] Embeddings require a runtime
+> Moving to semantic search means adding a vector store and either a serverless function or an external API call. This breaks the fully-static architecture. Evaluate the cost/complexity trade-off carefully before implementing.
+
+> [!CAUTION] Never commit API keys to the repo
+> If you add an embeddings API (OpenAI, Cohere, etc.), store the key in Vercel environment variables. It should never appear in `.env` committed to git.
+
+## Design system
+
+~~Initially used shadcn/ui~~ — removed in favour of a fully custom terminal aesthetic. All components are hand-rolled with Tailwind v4 utility classes and Framer Motion animations.
+
+Key design tokens:
+
+- Background: `#0b0e1c`
+- Primary (purple): `#c983e2`
+- Secondary (cyan): `#00eefc`
+- Font stack: `font-display` (display headings) / `font-mono` (all UI chrome) / `font-sans` (body prose)

@@ -1,0 +1,131 @@
+---
+title: "Attention Mechanism — Key Concepts"
+date: "2026-05-20"
+updated: "2026-06-15"
+subject: "ml"
+maturity: "evergreen"
+summary: "Scaled dot-product attention, multi-head variants, and why the mechanism is the backbone of modern sequence models."
+tags: ["ml", "transformers", "deep-learning"]
+draft: false
+---
+
+## What attention does
+
+Attention allows a model to weight how much each position in a sequence should influence the representation of any other position. Unlike RNNs, this happens in parallel and captures long-range dependencies without vanishing gradients.
+
+The core operation is **scaled dot-product attention**:
+
+```
+Attention(Q, K, V) = softmax( Q·Kᵀ / √d_k ) · V
+```
+
+Where:
+- **Q** (Query) — what we're looking for
+- **K** (Key) — what each position offers
+- **V** (Value) — what each position contributes if selected
+
+> [!NOTE] The scaling factor matters
+> Dividing by `√d_k` prevents dot products from growing large in high dimensions, which would push softmax into regions with near-zero gradients. Without it, training becomes unstable.
+
+## Implementation in NumPy
+
+```python
+import numpy as np
+
+def scaled_dot_product_attention(Q, K, V, mask=None):
+    d_k = Q.shape[-1]
+    scores = Q @ K.transpose(-2, -1) / np.sqrt(d_k)
+    if mask is not None:
+        scores = scores + mask * -1e9   # mask future positions in decoder
+    weights = softmax(scores, axis=-1)
+    return weights @ V, weights
+```
+
+```typescript
+// The same logic in TypeScript (for inference at the edge)
+function attention(Q: number[][], K: number[][], V: number[][]): number[][] {
+  const dk = Q[0].length;
+  const scores = matmul(Q, transpose(K)).map(row =>
+    row.map(v => v / Math.sqrt(dk))
+  );
+  const weights = softmax(scores);
+  return matmul(weights, V);
+}
+```
+
+> [!TIP] Use Flash Attention in production
+> The naive implementation is O(n²) in memory. Flash Attention (Dao et al., 2022) computes exact attention in O(n) memory by tiling the computation across SRAM. Use `torch.nn.functional.scaled_dot_product_attention` — it dispatches to Flash Attention automatically when available.
+
+## Multi-head attention
+
+Rather than running attention once over the full dimension, multi-head attention runs `h` parallel attention functions on projected subspaces, then concatenates:
+
+```python
+class MultiHeadAttention(nn.Module):
+    def __init__(self, d_model: int, num_heads: int):
+        super().__init__()
+        self.h    = num_heads
+        self.d_k  = d_model // num_heads
+        self.W_q  = nn.Linear(d_model, d_model)
+        self.W_k  = nn.Linear(d_model, d_model)
+        self.W_v  = nn.Linear(d_model, d_model)
+        self.W_o  = nn.Linear(d_model, d_model)
+
+    def forward(self, Q, K, V):
+        B, T, _ = Q.shape
+        # project and split into heads
+        Q = self.W_q(Q).view(B, T, self.h, self.d_k).transpose(1, 2)
+        K = self.W_k(K).view(B, T, self.h, self.d_k).transpose(1, 2)
+        V = self.W_v(V).view(B, T, self.h, self.d_k).transpose(1, 2)
+        x, _ = scaled_dot_product_attention(Q, K, V)
+        x = x.transpose(1, 2).contiguous().view(B, T, -1)
+        return self.W_o(x)
+```
+
+> [!IMPORTANT] Head dimension must divide evenly
+> `d_model` must be divisible by `num_heads`. Standard configs: 512/8, 768/12, 1024/16. Getting this wrong raises a runtime shape error.
+
+## Attention variants
+
+| Variant | Use case | Key difference |
+|---------|----------|---------------|
+| Self-attention | Encoder | Q, K, V all from same sequence |
+| Cross-attention | Decoder | Q from decoder, K/V from encoder |
+| Causal (masked) | Decoder / GPT | Upper triangle of score matrix masked |
+| Sparse attention | Long sequences | Only attend to local window + global tokens |
+| Linear attention | Efficiency | Kernel approximation, O(n) instead of O(n²) |
+
+## Why it replaced RNNs
+
+~~Sequential computation~~ is the critical bottleneck in RNNs — each step depends on the previous hidden state, preventing parallelisation. Attention computes all pairwise interactions simultaneously.
+
+Three concrete advantages:
+
+1. **Parallelism** — all positions computed in one matrix operation on GPU
+2. **Constant path length** — any two positions interact in O(1) steps, not O(n)
+3. **Interpretability** — attention weights are inspectable; you can see what each head attends to
+
+> [!WARNING] Attention is not free
+> Self-attention is O(n²) in sequence length for both compute and memory. For sequences longer than ~4096 tokens, vanilla attention becomes prohibitively expensive. See sparse attention, linear attention, or state-space models (Mamba) for long-context alternatives.
+
+## Application to knowledge retrieval
+
+In [[atlas-sys]], the planned semantic search feature uses transformer-based sentence embeddings to find related content by meaning rather than keyword overlap.
+
+The core idea: embed every note and post into a vector space using a pre-trained encoder, then at query time find the nearest neighbours via cosine similarity. This is essentially attention without the learned projections — matching a query vector against a set of key vectors.
+
+See [[building-atlas-sys|the Atlas build post]] for the implementation roadmap.
+
+> [!CAUTION] Fine-tuning on personal data is overkill
+> Sentence-transformers pretrained on large corpora already generalise well to technical notes. Fine-tuning requires labelled retrieval pairs you almost certainly don't have. Start with `all-MiniLM-L6-v2` — it's fast and accurate enough.
+
+## Study checklist
+
+- [x] Scaled dot-product attention (math + code)
+- [x] Multi-head attention
+- [x] Positional encoding (sinusoidal vs learned)
+- [x] Encoder / decoder architecture
+- [x] Causal masking for autoregressive models
+- [ ] Flash Attention internals
+- [ ] Grouped Query Attention (GQA) — used in Llama 3
+- [ ] State Space Models (Mamba) as attention alternative

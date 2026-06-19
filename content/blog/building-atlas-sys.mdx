@@ -1,0 +1,434 @@
+---
+title: "Building Atlas v1: A Personal Knowledge OS"
+date: "2026-06-15"
+draft: false
+summary: "Full technical documentation of Atlas v1 — MDX pipeline, graph linking, design system, LaTeX math, and a dev-only admin panel. Written so that v2 can learn from v1."
+tags: ["personal", "engineering", "web"]
+---
+
+## Why I built this
+
+Most personal sites are portfolios. Static showcases. I wanted something that *thinks* — a living system where writing a note about attention mechanisms automatically surfaces it next to a project that uses transformers, without me manually curating anything.
+
+That is [[atlas-sys]]. A graph-linked knowledge OS disguised as a personal site. This post is the full v1 technical record — what was built, why decisions were made, and what comes next.
+
+> [!NOTE] This is a living document
+> Atlas iterates continuously. Sections are updated as features ship. Version markers (`v1.x`) indicate when something changed.
+
+---
+
+## Stack at a glance
+
+| Layer | Technology | Reason |
+|-------|-----------|--------|
+| Framework | Next.js 16 (App Router) | RSC + static generation + route handlers |
+| Styling | Tailwind v4 | CSS-first config, `@utility`, no config file |
+| Animations | Framer Motion | Layout animations, hero typewriter |
+| Content | MDX (flat files) | Full control, zero vendor lock-in |
+| Deployment | Vercel | Zero-config, production filesystem is read-only (free security layer) |
+| Math | remark-math + rehype-katex | LaTeX `$$...$$` blocks |
+| Syntax highlighting | rehype-pretty-code | Code blocks with title, line numbers, diff highlighting |
+| Graph linking | Custom (`lib/graph.ts`) | Build-time wikilink + backlink discovery |
+
+~~Notion~~ and ~~Obsidian Publish~~ were both evaluated and rejected. Vendor lock-in and limited layout control made them non-starters.
+
+> [!TIP] Skip the CMS for personal sites
+> If you update content fewer than twice a week, a flat-file MDX setup with `git push` deploys is strictly better than any headless CMS. Zero monthly cost, zero lock-in, total control.
+
+---
+
+## Architecture
+
+The content pipeline is purely static. No database, no runtime content fetching.
+
+```
+content/
+  blog/          ← Long-form writing
+  projects/      ← Build write-ups
+  garden/
+    ml/          ← Subject-scoped notes
+    engineering/
+  resources/     ← Papers, books, datasets
+
+lib/
+  content.ts     ← MDX file reader + frontmatter parser
+  graph.ts       ← Wikilink scanner + backlink graph
+  mdx.ts         ← next-mdx-remote/rsc + full plugin chain
+
+app/
+  blog/[slug]/   ← Static generated at build time
+  projects/[slug]/
+  garden/[subject]/[slug]/
+  resources/[slug]/
+  admin/         ← Dev-only CMS panel (404 in production)
+  api/admin/     ← CRUD route handlers (all dev-only)
+```
+
+At build time, `generateStaticParams()` walks each `content/` directory and emits one page per `.mdx` file. Production builds have zero runtime file I/O.
+
+---
+
+## Content types
+
+Each type has its own frontmatter schema. All types share `title`, `date`, `draft`, `summary`, and `tags`.
+
+### Blog
+
+```yaml
+---
+title: "Post title"
+date: "2026-06-19"
+summary: "One-liner shown in cards"
+tags: ["engineering"]
+cover: "/covers/my-cover.jpg"    # optional
+draft: false
+external_url: "https://..."      # optional — redirects to Medium instead of rendering locally
+---
+```
+
+### Project
+
+```yaml
+---
+title: "Project name"
+date: "2026-06-19"
+stack: ["Next.js", "TypeScript", "Tailwind"]
+status: "wip"                    # live | wip | archived
+featured: true                   # appears on home page hero
+demo: "https://..."
+repo: "https://github.com/..."
+excalidraw: "/diagrams/arch.excalidraw"   # optional embedded diagram
+draft: false
+---
+```
+
+### Garden note
+
+Garden notes are Zettelkasten-style writing with a maturity lifecycle. They live under `/garden/{subject}/{slug}` — the subject folder is a mandatory routing segment.
+
+```yaml
+---
+title: "Attention Is All You Need — annotated"
+date: "2026-05-01"
+subject: "ml"
+maturity: "seedling"    # seedling | budding | evergreen
+draft: false
+---
+```
+
+Maturity levels get color-coded chips: `seedling` (dim), `budding` (amber), `evergreen` (green). See [[transformer-attention]] for a live example.
+
+### Resource
+
+References with optional personal annotations in the body.
+
+```yaml
+---
+title: "Attention Is All You Need"
+date: "2026-05-01"
+type: "paper"           # paper | book | article | dataset | slides
+authors: ["Vaswani, A.", "Shazeer, N."]
+year: 2017
+publisher: "NeurIPS"
+url: "https://arxiv.org/abs/1706.03762"
+doi: "10.48550/arXiv.1706.03762"
+draft: false
+---
+```
+
+---
+
+## The MDX pipeline
+
+Every `.mdx` file goes through `next-mdx-remote/rsc`. The full plugin chain, in order:
+
+```typescript
+// lib/mdx.ts
+import remarkGfm          from "remark-gfm";
+import remarkMath         from "remark-math";
+import remarkWikiLink     from "remark-wiki-link";
+import rehypeSlug         from "rehype-slug";
+import rehypeAutolinkHeadings from "rehype-autolink-headings";
+import rehypeKatex        from "rehype-katex";
+import rehypePrettyCode   from "rehype-pretty-code";
+import rehypeCallouts     from "rehype-callouts";
+
+const options: MDXRemoteOptions = {
+    remarkPlugins: [remarkGfm, remarkMath, remarkWikiLink],
+    rehypePlugins: [
+        rehypeSlug,
+        [rehypeAutolinkHeadings, { behavior: "wrap" }],
+        rehypeKatex,
+        [rehypePrettyCode, { theme: "github-dark-dimmed" }],
+        rehypeCallouts,
+    ],
+};
+```
+
+> [!IMPORTANT] Plugin ordering is load-bearing
+> `remarkMath` must run before MDX's JSX transform. If `$\frac{Q K^\top}{\sqrt{d_k}}$` is parsed by MDX first, the curly braces are treated as JSX expression containers and the build fails with an acorn parse error. The remark stage processes math first and converts it to safe HTML nodes before MDX ever sees it.
+
+### Wikilinks
+
+`[[slug]]` syntax is converted to anchor tags at the remark stage. The `remarkWikiLink` plugin is configured with a resolver that checks `lib/graph.ts` for a matching entry:
+
+- `[[atlas-sys]]` → links to the Atlas project page
+- `[[atlas-sys|custom label]]` → same link, custom display text
+- Unresolved slug → plain text, no broken link
+
+### Callouts (GitHub-style)
+
+```markdown
+> [!NOTE] Title
+> Content
+
+> [!TIP] / [!IMPORTANT] / [!WARNING] / [!CAUTION]
+```
+
+`rehypeCallouts` wraps these in `.callout .callout-{type}` divs. Custom CSS in `globals.css` provides colored left borders and tinted backgrounds for all five types.
+
+### Syntax highlighting
+
+`rehype-pretty-code` wraps code blocks in `<figure data-rehype-pretty-code-figure>`. Title annotation:
+
+````markdown
+```typescript title="lib/mdx.ts"
+// code here
+```
+````
+
+CSS targets `figure[data-rehype-pretty-code-figure]` for border, background, and padding.
+
+### LaTeX math
+
+Inline: `$E = mc^2$` — `$E = mc^2$`
+
+Block:
+
+```
+$$
+\text{Attention}(Q, K, V) = \text{softmax}\!\left(\frac{QK^\top}{\sqrt{d_k}}\right) V
+$$
+```
+
+KaTeX CSS is imported in `app/layout.tsx`:
+
+```typescript
+import "katex/dist/katex.min.css";
+```
+
+### Figures with captions
+
+Standard MDX doesn't support Markdown image captions. Use the HTML `<figure>` element directly:
+
+```html
+<figure>
+  <img src="/images/photo.jpg" alt="description" />
+  <figcaption>Caption shown in monospace below the image</figcaption>
+</figure>
+```
+
+`globals.css` styles `figure` with a border, `figcaption` with a monospace top-bordered bar.
+
+---
+
+## The graph system
+
+`lib/graph.ts` scans all content at build time and builds a directed link graph. Two link patterns are recognized:
+
+1. `[[slug]]` wikilinks (any slug in any content type)
+2. Standard Markdown links to internal routes (`/blog/`, `/projects/`, `/garden/`, `/resources/`)
+
+```typescript
+// lib/graph.ts — simplified
+export function buildGraph(entries: Entry[]): Graph {
+    const forward: Record<string, string[]>  = {};
+    const backward: Record<string, string[]> = {};
+
+    for (const entry of entries) {
+        const links = extractLinks(entry.rawContent);
+        forward[entry.slug] = links;
+        for (const target of links) {
+            backward[target] ??= [];
+            backward[target].push(entry.slug);
+        }
+    }
+    return { forward, backward };
+}
+```
+
+Each slug page queries `backward[slug]` and renders a **Backlinks** panel in the sidebar — populated automatically, zero manual curation.
+
+> [!WARNING] Graph cache is module-level
+> In development with hot reload, the graph can go stale after adding new files. If backlinks look wrong, restart the dev server.
+
+---
+
+## Design system
+
+### Design tokens
+
+All colors live in CSS custom properties under `@theme inline` in `globals.css`. The palette is Material You-inspired with a dark base and violet primary.
+
+```css
+@theme inline {
+    --primary:               #c983e2;
+    --on-primary:            #3f0060;
+    --secondary-container:   #00eefc;
+    --surface:               #0a0a12;
+    --surface-container:     #13131f;
+    --surface-container-high:#1c1c2a;
+    --on-surface:            #e5e5f0;
+    --on-surface-variant:    #9e9eb8;
+    --outline-variant:       #2a2a3e;
+    --error:                 #ffb4ab;
+    --font-mono:             var(--font-jetbrains-mono), monospace;
+}
+```
+
+Fonts: JetBrains Mono (mono) + Geist (sans), both served via `next/font`.
+
+### Prose styles
+
+Prose headings get `scroll-margin-top: 5rem` to clear the sticky navbar (h-14 = 56px + 24px breathing room = 80px total).
+
+```css
+.prose h1, .prose h2, .prose h3,
+.prose h4, .prose h5, .prose h6 {
+    scroll-margin-top: 5rem;
+}
+```
+
+Heading anchor links are injected by `rehypeAutolinkHeadings` with `behavior: "wrap"` — clicking the heading itself copies the deep link.
+
+### Tailwind v4
+
+No `tailwind.config.js`. All configuration is CSS-first:
+
+```css
+@import "tailwindcss";
+
+@utility dot-grid {
+    background-image:
+        radial-gradient(circle, var(--outline-variant) 1px, transparent 1px);
+    background-size: 24px 24px;
+}
+```
+
+Custom utilities are defined with `@utility`, not `@layer components`. The `.dot-grid` utility is used in content hero sections for the textured background.
+
+---
+
+## Slug page layout
+
+All four content type slug pages share the same layout pattern:
+
+```
+┌──────────────────── full-bleed hero (dot-grid bg) ──────────────┐
+│  max-w-6xl mx-auto                                               │
+│  breadcrumb / title / metadata chips / CTA buttons              │
+└─────────────────────────────────────────────────────────────────┘
+┌── max-w-6xl mx-auto ─────────────────────────────────────────────┐
+│  ┌── prose (1fr) ────────────────┐  ┌── sidebar (260px) ───────┐ │
+│  │  MDX rendered content         │  │  Table of Contents       │ │
+│  │                               │  │  Backlinks               │ │
+│  └───────────────────────────────┘  └──────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+The hero and body share the same `max-w-6xl mx-auto` container so all content aligns vertically.
+
+---
+
+## Admin panel (`/admin`)
+
+A dev-only content management panel that writes MDX files directly to disk. Returns 404 in production.
+
+```typescript
+// app/admin/page.tsx
+import { notFound } from "next/navigation";
+import AdminPanel from "./AdminPanel";
+
+export default function AdminPage() {
+    if (process.env.NODE_ENV !== "development") notFound();
+    return <AdminPanel />;
+}
+```
+
+All four API routes under `/api/admin/*` apply the same `NODE_ENV` guard at the route level. Vercel's read-only production filesystem is a second defense layer.
+
+### Features
+
+| Feature | Implementation |
+|---------|---------------|
+| Create content | POST `/api/admin/create` — builds YAML frontmatter + body, writes `.mdx` to `content/` |
+| Edit content | GET `/api/admin/read` → populate form → PUT `/api/admin/update` overwrites file |
+| Delete content | DELETE `/api/admin/delete` with confirmation modal |
+| Browse all content | GET `/api/admin/list` — walks `content/`, returns items sorted by date |
+| Image upload | POST `/api/admin/upload` — saves to `public/images/`, copies `![alt](path)` snippet |
+| Draft persistence | localStorage autosave with 800ms debounce — survives page refresh |
+| Copy MDX | Build full MDX string client-side → clipboard (for pasting into editor) |
+
+### Security model
+
+| Threat | Mitigation |
+|--------|-----------|
+| Production access | `NODE_ENV !== "development"` → 404 at page + API level |
+| Read-only production FS | Vercel production filesystem rejects all writes |
+| Path traversal | `abs.startsWith(contentRoot)` validation before every file operation |
+| External access in dev | Dev server is localhost-only unless explicitly tunneled |
+
+> [!CAUTION] Never tunnel localhost while admin is running
+> Running `ngrok` or similar during development exposes the admin panel. The only protection in dev is network isolation.
+
+### Library view
+
+The `[LIBRARY]` tab lists all content from all types with filter tabs (ALL / blog / project / garden / resource). Each row shows:
+
+- **DRAFT / LIVE** status badge
+- Type badge (color-coded: violet for blog, cyan for project, green for garden, amber for resource)
+- Title + date + subject (for garden notes)
+- Hover-revealed `EDIT` and `DELETE` buttons
+
+Clicking `EDIT` loads the file via `/api/admin/read`, populates the compose form, and locks the slug field (the file path is fixed — only the content can change).
+
+---
+
+## What v1 ships with
+
+- [x] MDX pipeline with GFM, wikilinks, callouts, syntax highlighting
+- [x] LaTeX math via remark-math + rehype-katex
+- [x] Build-time graph linking + automatic backlink panels
+- [x] Four content types with typed frontmatter schemas
+- [x] Terminal-aesthetic design system (Material You tokens, JetBrains Mono)
+- [x] Dot-grid hero sections with Framer Motion animations
+- [x] Sticky navbar + scroll-margin heading anchors
+- [x] Table of Contents sidebar (auto-generated from headings)
+- [x] Dev-only admin panel with full CRUD + image upload
+- [x] localStorage draft autosave in admin
+- [x] VS Code snippets for all four frontmatter types
+- [x] Medium redirect support (`external_url` on blog posts)
+- [x] Captioned images (`<figure>` + `<figcaption>`)
+- [ ] Full-text search (planned v2)
+- [ ] RSS / Atom feed (planned v2)
+- [ ] Light theme toggle (planned v2)
+- [ ] Excalidraw diagram embed (wired in frontmatter, renderer pending)
+
+---
+
+## v2 plans
+
+This post exists precisely so v2 can read v1's decisions and not relitigate them. Things to revisit:
+
+**Full-text search** — The graph already has every entry's raw content at build time. The data is there; it just needs a client-side index (Fuse.js or pagefind) and a search overlay.
+
+**RSS feed** — A single route handler at `/rss.xml` that reads `getEntries("blog")` and serializes to Atom XML. One file, no dependencies.
+
+**Excalidraw embed** — The `excalidraw` frontmatter field is already parsed and passed to project pages. The renderer is the missing piece: an `<iframe>` pointing to `excalidraw.com/embed` with the diagram file URL, or a self-hosted viewer.
+
+**Light theme** — The design tokens are already in CSS custom properties. Adding `[data-theme="light"]` overrides and a toggle button is the full scope.
+
+**Maturity graph visualization** — A canvas or SVG view of all garden notes as nodes, colored by maturity, with edges from wikilinks. The graph data already exists in `lib/graph.ts`.
+
+> [!NOTE] This post links to [[atlas-sys|the Atlas project page]] and to [[transformer-attention|my attention mechanism note]]
+> Both will appear in their respective backlink panels — a live demonstration of the graph system.

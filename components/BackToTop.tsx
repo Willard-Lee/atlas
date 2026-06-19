@@ -23,7 +23,7 @@ export default function BackToTop() {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.93 }}
                     onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-                    className="fixed bottom-16 right-8 z-40 font-mono text-xs px-3 py-2 border btn-press"
+                    className="fixed bottom-29 right-8 z-40 font-mono text-xs px-3 py-2 border btn-press"
                     style={{
                         borderColor: "var(--outline-variant)",
                         color: "var(--on-surface-variant)",

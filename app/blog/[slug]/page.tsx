@@ -48,52 +48,54 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
                 />
             )}
 
-            {/* Hero header — full width */}
-            <div className="dot-grid px-8 md:px-16 py-16 mb-0">
-                <div className="flex items-center gap-2 mb-4">
-                    <Link href="/blog"
-                          className="font-mono text-xs tracking-widest transition-colors hover:text-[var(--primary)]"
-                          style={{ color: "var(--on-surface-variant)" }}>
-                        TRANSMISSION_LOG
-                    </Link>
+            {/* Hero header — dot-grid full-bleed, inner content width-locked to body */}
+            <div className="dot-grid py-16 mb-0">
+                <div className="max-w-6xl mx-auto px-6 md:px-8">
+                    <div className="flex items-center gap-2 mb-4">
+                        <Link href="/blog"
+                              className="font-mono text-xs tracking-widest transition-colors hover:text-[var(--primary)]"
+                              style={{ color: "var(--on-surface-variant)" }}>
+                            TRANSMISSION_LOG
+                        </Link>
+                        {catData && (
+                            <>
+                                <span className="font-mono text-xs" style={{ color: "var(--outline)" }}>/</span>
+                                <span className="font-mono text-xs tracking-widest" style={{ color: catData.color }}>
+                                    {catData.label}
+                                </span>
+                            </>
+                        )}
+                    </div>
+
                     {catData && (
-                        <>
-                            <span className="font-mono text-xs" style={{ color: "var(--outline)" }}>/</span>
-                            <span className="font-mono text-xs tracking-widest" style={{ color: catData.color }}>
+                        <div className="flex items-center gap-2 mb-4">
+                            <span className="font-mono text-xs" style={{ color: catData.color }}>{catData.symbol}</span>
+                            <span className="font-mono text-xs tracking-widest px-2 py-0.5 border"
+                                  style={{ color: catData.color, borderColor: catData.color }}>
                                 {catData.label}
                             </span>
-                        </>
+                        </div>
                     )}
-                </div>
 
-                {catData && (
-                    <div className="flex items-center gap-2 mb-4">
-                        <span className="font-mono text-xs" style={{ color: catData.color }}>{catData.symbol}</span>
-                        <span className="font-mono text-xs tracking-widest px-2 py-0.5 border"
-                              style={{ color: catData.color, borderColor: catData.color }}>
-                            {catData.label}
-                        </span>
-                    </div>
-                )}
+                    <h1 className="font-display text-4xl md:text-5xl font-bold mb-4 break-words" style={{ color: "var(--on-surface)" }}>
+                        {post.frontmatter.title}
+                    </h1>
 
-                <h1 className="font-display text-5xl font-bold mb-4" style={{ color: "var(--on-surface)" }}>
-                    {post.frontmatter.title}
-                </h1>
+                    {post.frontmatter.summary && (
+                        <p className="font-sans text-base mb-4 leading-relaxed max-w-xl"
+                           style={{ color: "var(--on-surface-variant)" }}>
+                            {post.frontmatter.summary}
+                        </p>
+                    )}
 
-                {post.frontmatter.summary && (
-                    <p className="font-sans text-base mb-4 leading-relaxed max-w-xl"
-                       style={{ color: "var(--on-surface-variant)" }}>
-                        {post.frontmatter.summary}
+                    <p className="font-mono text-xs tracking-widest" style={{ color: "var(--on-surface-variant)" }}>
+                        {post.frontmatter.date} · {readingTime} min read
                     </p>
-                )}
-
-                <p className="font-mono text-xs tracking-widest" style={{ color: "var(--on-surface-variant)" }}>
-                    {post.frontmatter.date} · {readingTime} min read
-                </p>
+                </div>
             </div>
 
-            {/* Two-column body */}
-            <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-[1fr_240px] gap-12 px-8 md:px-16 pb-24 pt-10">
+            {/* Two-column body — max-w matches hero inner so left edges align */}
+            <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-12 px-6 md:px-8 pb-24 pt-10">
 
                 {/* ── Main content ── */}
                 <div className="min-w-0">

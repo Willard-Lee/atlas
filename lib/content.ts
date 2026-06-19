@@ -1,15 +1,15 @@
 import "server-only";
-import fs from "node:fs"; /* fs module provides APIs for file system operations */
-import path from "node:path";  /* path module provides utilities for working with file and directory paths */
-import matter from "gray-matter"; /* gray-matter is a library for parsing YAML frontmatter from markdown files */
-import type {ContentType, Entry, BaseFrontmatter} from "./types"; /* ContentType and Entry types from ./types */
+import fs from "node:fs";
+import path from "node:path";
+import matter from "gray-matter";
+import type { ContentType, Entry, BaseFrontmatter } from "./types";
 
 const ROOT = path.join(process.cwd(), "content");
-const DIR: Record<ContentType, string> = { /*this creates an object mapping ContentType to directory name*/
+const DIR: Record<ContentType, string> = {
     project: "projects",
-    post: "blog",
-    note: "garden",
-    resource: "resources",
+    post:    "blog",
+    note:    "garden",
+    resource:"resources",
 };
 const PREFIX: Record<ContentType, string> = {
     project : "/projects",
@@ -26,18 +26,23 @@ function walk(dir: string): string[]{
     });
 }
 
-export function getEntries<F = Record<string, unknown>> (type: ContentType): Entry<F>[] {
-    const base = path.join(ROOT, DIR[type]);
-    return walk(base).map((file) => {
-        const { data, content} = matter(fs.readFileSync(file, "utf-8"));
+export function getEntries<F = Record<string, unknown>>(type: ContentType): Entry<F>[] {
+    const isDev = process.env.NODE_ENV === "development";
+    return walk(path.join(ROOT, DIR[type])).map((file) => {
+        const { data, content } = matter(fs.readFileSync(file, "utf-8"));
         const slug = path.basename(file, ".mdx");
-        const url = type === "note" 
+        const url  = type === "note"
             ? `/garden/${data.subject}/${slug}`
             : `${PREFIX[type]}/${slug}`;
-        const fm = {...data, tags: (data.tags ?? []).map((t: string) => t.toLowerCase())} as F;
-        return {
-            type, slug, url, frontmatter: fm, raw: content } as Entry<F>;
-    }).filter((e) => process.env.NODE_ENV === "development" || !(e.frontmatter as Record<string, unknown>).draft).sort((a, b) => ((b.frontmatter as Record<string, unknown>).date as string).localeCompare((a.frontmatter as Record<string, unknown>).date as string));
+        const frontmatter = { ...data, tags: (data.tags ?? []).map((t: string) => t.toLowerCase()) } as F;
+        return { type, slug, url, frontmatter, raw: content } as Entry<F>;
+    })
+    .filter((e) => isDev || !(e.frontmatter as Record<string, unknown>).draft)
+    .sort((a, b) => {
+        const da = (a.frontmatter as Record<string, unknown>).date as string;
+        const db = (b.frontmatter as Record<string, unknown>).date as string;
+        return db.localeCompare(da);
+    });
 }
 
 export const getAllEntries = (): Entry<BaseFrontmatter>[] => (["project", "post", "note", "resource"] as ContentType[]).flatMap((type) => getEntries<BaseFrontmatter>(type));

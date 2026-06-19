@@ -9,6 +9,8 @@ const skills: Record<string, { name: string; level: number }[]> = {
         { name: "TypeScript", level: 75 },
         { name: "R",          level: 65 },
         { name: "SQL",        level: 80 },
+        { name: "C++",        level: 55 },
+        { name: "Java",        level: 60 }
     ],
     "ML / AI": [
         { name: "PyTorch",      level: 75 },
@@ -30,7 +32,7 @@ const skills: Record<string, { name: string; level: number }[]> = {
     "WEB": [
         { name: "Next.js", level: 70 },
         { name: "React",   level: 72 },
-        { name: "Tailwind",level: 80 },
+        { name: "Tailwind",level: 75 },
     ],
 };
 
@@ -70,10 +72,11 @@ const bootLines = [
 ];
 
 const languages = [
-    { code: "EN",  name: "English",  level: "FLUENT",         bars: 9  },
-    { code: "MS",  name: "Malay",    level: "NATIVE",         bars: 10 },
-    { code: "ZH",  name: "Mandarin", level: "CONVERSATIONAL", bars: 6  },
-    { code: "HOK", name: "Hokkien",  level: "NATIVE",         bars: 10 },
+    { code: "EN",  name: "English",  level: "NATIVE",         bars: 9  },
+    { code: "MS",  name: "Malay",    level: "FLUENT",         bars: 7 },
+    { code: "ZH",  name: "Mandarin", level: "CONVERSATIONAL", bars: 5  },
+    { code: "TA", name: "TAMIL",  level: "BEGINNER",          bars: 3 },
+    { code: "FR", name: "FRENCH",  level: "LEARNING",          bars: 1 },
 ] as const;
 
 function langColor(level: string) {

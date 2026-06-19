@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { navLinks, socialLinks } from "../lib/links";
-import { FaGithub, FaInstagram, FaLinkedin, FaSquareXTwitter } from "react-icons/fa6";
+import { FaGithub, FaInstagram, FaLinkedin, FaSquareXTwitter, FaMedium } from "react-icons/fa6";
 
 const socialIcons: Record<string, React.ReactNode> = {
     GitHub:    <FaGithub         size={16} />,
     Instagram: <FaInstagram      size={16} />,
     LinkedIn:  <FaLinkedin       size={16} />,
     X:         <FaSquareXTwitter size={16} />,
+    Medium:    <FaMedium         size={16} />,
 };
 
 export default function Footer() {

@@ -44,46 +44,48 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
                 <img src={project.frontmatter.cover} alt="" className="w-full h-64 object-cover" />
             )}
 
-            {/* Hero header */}
-            <div className="dot-grid px-8 md:px-16 py-16 mb-0">
-                <div className="flex items-center gap-2 mb-4">
-                    <Link href="/projects"
-                          className="font-mono text-xs tracking-widest transition-colors hover:text-[var(--primary)]"
-                          style={{ color: "var(--on-surface-variant)" }}>
-                        BUILD.MANIFEST
-                    </Link>
-                    <span className="font-mono text-xs" style={{ color: "var(--outline)" }}>/</span>
-                    <span className="font-mono text-xs tracking-widest" style={{ color: meta.color }}>
-                        {meta.label}
-                    </span>
-                </div>
+            {/* Hero header — dot-grid full-bleed, inner content width-locked to body */}
+            <div className="dot-grid py-16 mb-0">
+                <div className="max-w-6xl mx-auto px-6 md:px-8">
+                    <div className="flex items-center gap-2 mb-4">
+                        <Link href="/projects"
+                              className="font-mono text-xs tracking-widest transition-colors hover:text-[var(--primary)]"
+                              style={{ color: "var(--on-surface-variant)" }}>
+                            BUILD.MANIFEST
+                        </Link>
+                        <span className="font-mono text-xs" style={{ color: "var(--outline)" }}>/</span>
+                        <span className="font-mono text-xs tracking-widest" style={{ color: meta.color }}>
+                            {meta.label}
+                        </span>
+                    </div>
 
-                <div className="flex items-center gap-2 mb-4">
-                    <span className="font-mono text-xs" style={{ color: meta.color }}>■</span>
-                    <span className="font-mono text-xs tracking-widest px-2 py-0.5 border"
-                          style={{ color: meta.color, borderColor: meta.color }}>
-                        {meta.label}
-                    </span>
-                </div>
+                    <div className="flex items-center gap-2 mb-4">
+                        <span className="font-mono text-xs" style={{ color: meta.color }}>■</span>
+                        <span className="font-mono text-xs tracking-widest px-2 py-0.5 border"
+                              style={{ color: meta.color, borderColor: meta.color }}>
+                            {meta.label}
+                        </span>
+                    </div>
 
-                <h1 className="font-display text-5xl font-bold mb-3" style={{ color: "var(--on-surface)" }}>
-                    {project.frontmatter.title}
-                </h1>
+                    <h1 className="font-display text-4xl md:text-5xl font-bold mb-3 break-words" style={{ color: "var(--on-surface)" }}>
+                        {project.frontmatter.title}
+                    </h1>
 
-                {project.frontmatter.summary && (
-                    <p className="font-sans text-base mb-4 leading-relaxed max-w-xl"
-                       style={{ color: "var(--on-surface-variant)" }}>
-                        {project.frontmatter.summary}
+                    {project.frontmatter.summary && (
+                        <p className="font-sans text-base mb-4 leading-relaxed max-w-xl"
+                           style={{ color: "var(--on-surface-variant)" }}>
+                            {project.frontmatter.summary}
+                        </p>
+                    )}
+
+                    <p className="font-mono text-xs tracking-widest" style={{ color: "var(--on-surface-variant)" }}>
+                        {project.frontmatter.date} · {readingTime} min read
                     </p>
-                )}
-
-                <p className="font-mono text-xs tracking-widest" style={{ color: "var(--on-surface-variant)" }}>
-                    {project.frontmatter.date} · {readingTime} min read
-                </p>
+                </div>
             </div>
 
-            {/* Two-column body */}
-            <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-[1fr_240px] gap-12 px-8 md:px-16 pb-24 pt-10">
+            {/* Two-column body — max-w matches hero inner so left edges align */}
+            <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-12 px-6 md:px-8 pb-24 pt-10">
 
                 {/* ── Main content ── */}
                 <div className="min-w-0">
