@@ -9,6 +9,8 @@ const statusColor: Record<string, string> = {
     archived: "var(--on-surface-variant)",
 };
 
+// LCG seeded from the slug so each project gets stable-but-unique bar values
+// without storing real metrics. Same slug → same bars across renders/builds.
 function seededMetrics(slug: string): number[] {
     let s = 0;
     for (let i = 0; i < slug.length; i++) s = (s * 31 + slug.charCodeAt(i)) & 0xffff;
