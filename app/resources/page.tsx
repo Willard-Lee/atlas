@@ -129,10 +129,26 @@ export default async function ResourcePage() {
                                                    style={{ color: "var(--on-surface-variant)" }}>
                                                     {resource.frontmatter.authors.join(", ")}
                                                 </p>
+                                                {/* Mobile metadata — year + first 2 tags */}
+                                                <div className="flex items-center gap-2 mt-2 md:hidden">
+                                                    {resource.frontmatter.year && (
+                                                        <span className="font-mono text-xs" style={{ color: "var(--outline)" }}>
+                                                            {resource.frontmatter.year}
+                                                        </span>
+                                                    )}
+                                                    {resource.frontmatter.tags?.slice(0, 2).map(tag => (
+                                                        <Link key={tag} href={`/tags/${tag}`}
+                                                              className="font-mono text-xs px-1.5 py-0.5 border transition-colors hover:border-[var(--primary)] hover:text-[var(--primary)]"
+                                                              style={{ borderColor: "var(--outline-variant)", color: "var(--on-surface-variant)" }}>
+                                                            {tag}
+                                                        </Link>
+                                                    ))}
+                                                </div>
                                             </div>
                                         </div>
 
-                                        <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                                        {/* Desktop metadata column */}
+                                        <div className="hidden md:flex flex-col items-end gap-2 flex-shrink-0">
                                             <span className="font-mono text-xs" style={{ color: "var(--on-surface-variant)" }}>
                                                 {resource.frontmatter.year}
                                             </span>

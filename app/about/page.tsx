@@ -33,18 +33,18 @@ const techIcons: Record<string, { icon: React.ReactNode; color: string }> = {
 
 const skills: Record<string, { name: string; level: number }[]> = {
     "LANGUAGES": [
-        { name: "Python",     level: 90 },
-        { name: "TypeScript", level: 75 },
-        { name: "R",          level: 65 },
-        { name: "SQL",        level: 80 },
-        { name: "C++",        level: 55 },
-        { name: "Java",        level: 60 }
+        { name: "Python",     level: 75 },
+        { name: "TypeScript", level: 56 },
+        { name: "R",          level: 30 },
+        { name: "SQL",        level: 67 },
+        { name: "C++",        level: 50 },
+        { name: "Java",        level: 64 }
     ],
     "ML / AI": [
-        { name: "PyTorch",      level: 75 },
-        { name: "HuggingFace",  level: 70 },
-        { name: "LangChain",    level: 65 },
-        { name: "scikit-learn", level: 80 },
+        { name: "PyTorch",      level: 70 },
+        { name: "HuggingFace",  level: 52 },
+        { name: "LangChain",    level: 50 },
+        { name: "scikit-learn", level: 56 },
     ],
     "DATA": [
         { name: "Pandas",  level: 88 },
@@ -53,12 +53,12 @@ const skills: Record<string, { name: string; level: number }[]> = {
         { name: "Jupyter", level: 90 },
     ],
     "FINANCE": [
-        { name: "Quant Analysis",      level: 55 },
-        { name: "Financial Modelling", level: 50 },
-        { name: "Portfolio Theory",    level: 45 },
+        { name: "Quant Analysis",      level: 10 },
+        { name: "Financial Modelling", level: 10 },
+        { name: "Portfolio Theory",    level: 15 },
     ],
     "WEB": [
-        { name: "Next.js", level: 70 },
+        { name: "Next.js", level: 68 },
         { name: "React",   level: 72 },
         { name: "Tailwind",level: 75 },
     ],
@@ -310,14 +310,13 @@ export default function AboutPage() {
                                                 const isTop  = name === top.name;
                                                 return (
                                                     <div key={name}
-                                                         className="group grid gap-3 px-4 py-2.5 transition-colors hover:bg-[var(--surface-container-high)] cursor-default"
-                                                         style={{ gridTemplateColumns: "11rem 6.5rem 1fr auto" }}>
+                                                         className="group skill-row gap-3 px-4 py-2.5 transition-colors hover:bg-[var(--surface-container-high)] cursor-default">
                                                         <span className="font-mono text-xs flex items-center gap-2 min-w-0 transition-colors duration-150 group-hover:text-[var(--on-surface)]"
                                                               style={{ color: isTop ? color : "var(--on-surface)" }}>
                                                             {isTop && <span style={{ color }}>▶ </span>}
                                                             {techIcons[name] && (
                                                                 <span
-                                                                    className="tech-icon"
+                                                                    className="tech-icon tech-icon-sm"
                                                                     style={{ "--ti-color": techIcons[name].color } as React.CSSProperties}
                                                                 >
                                                                     {techIcons[name].icon}
@@ -325,16 +324,18 @@ export default function AboutPage() {
                                                             )}
                                                             <span className="truncate">{name}</span>
                                                         </span>
-                                                        <span className="font-mono text-xs transition-colors duration-150"
+                                                        <span className="hidden sm:inline font-mono text-xs transition-colors duration-150"
                                                               style={{ color: pColor }}>
                                                             {pLabel}
                                                         </span>
-                                                        <AnimatedBar
-                                                            filled={filled}
-                                                            total={10}
-                                                            color={color}
-                                                            delay={itemIdx * 0.08}
-                                                        />
+                                                        <span className="hidden sm:block">
+                                                            <AnimatedBar
+                                                                filled={filled}
+                                                                total={10}
+                                                                color={color}
+                                                                delay={itemIdx * 0.08}
+                                                            />
+                                                        </span>
                                                         <span className="font-mono text-xs transition-colors duration-150 group-hover:text-[var(--on-surface)]"
                                                               style={{ color: "var(--on-surface-variant)" }}>
                                                             {level}
@@ -406,8 +407,8 @@ export default function AboutPage() {
                             <div className="flex-1 border-t" style={{ borderColor: "var(--outline-variant)" }} />
                         </div>
                         <div className="border border-t-0 overflow-x-auto" style={{ borderColor: "var(--outline-variant)" }}>
-                            {/* Table header */}
-                            <div className="flex gap-4 px-4 py-2 border-b"
+                            {/* Table header — desktop only */}
+                            <div className="hidden md:flex gap-4 px-4 py-2 border-b"
                                  style={{ borderColor: "var(--outline-variant)", background: "var(--surface-container)" }}>
                                 {["STATUS", "PID", "PROCESS", "DESCRIPTION"].map((h) => (
                                     <span key={h} className="font-mono text-xs font-bold tracking-widest"
@@ -418,28 +419,51 @@ export default function AboutPage() {
                                     </span>
                                 ))}
                             </div>
-                            {/* Process rows — full row highlight + process name shifts color */}
+                            {/* Process rows */}
                             {processes.map((proc) => (
                                 <div key={proc.pid}
-                                     className="group flex gap-4 items-center px-4 py-3 border-b last:border-b-0 transition-colors hover:bg-[var(--surface-container-high)] cursor-default"
+                                     className="group border-b last:border-b-0 transition-colors hover:bg-[var(--surface-container-high)] cursor-default"
                                      style={{ borderColor: "var(--outline-variant)" }}>
-                                    <span className="font-mono text-xs shrink-0 transition-colors duration-150"
-                                          style={{ width: "80px",
-                                                   color: proc.status === "RUNNING" ? "var(--secondary-container)" : "var(--on-surface-variant)" }}>
-                                        {proc.status === "RUNNING" ? "● " : "○ "}{proc.status}
-                                    </span>
-                                    <span className="font-mono text-xs shrink-0 transition-colors duration-150 group-hover:text-[var(--on-surface)]"
-                                          style={{ width: "64px", color: "var(--on-surface-variant)" }}>
-                                        {proc.pid}
-                                    </span>
-                                    <span className="font-mono text-xs shrink-0 transition-colors duration-150 group-hover:text-[var(--secondary-container)]"
-                                          style={{ width: "160px", color: "var(--primary)" }}>
-                                        {proc.name}
-                                    </span>
-                                    <span className="font-mono text-xs transition-colors duration-150 group-hover:text-[var(--on-surface)]"
-                                          style={{ color: "var(--on-surface-variant)" }}>
-                                        {proc.desc}
-                                    </span>
+
+                                    {/* Mobile card */}
+                                    <div className="md:hidden px-4 py-3 space-y-0.5">
+                                        <div className="flex items-center gap-3">
+                                            <span className="font-mono text-xs"
+                                                  style={{ color: proc.status === "RUNNING" ? "var(--secondary-container)" : "var(--on-surface-variant)" }}>
+                                                {proc.status === "RUNNING" ? "●" : "○"} {proc.status}
+                                            </span>
+                                            <span className="font-mono text-xs" style={{ color: "var(--on-surface-variant)" }}>
+                                                {proc.pid}
+                                            </span>
+                                        </div>
+                                        <div className="font-mono text-xs" style={{ color: "var(--primary)" }}>
+                                            {proc.name}
+                                        </div>
+                                        <div className="font-mono text-xs" style={{ color: "var(--on-surface-variant)" }}>
+                                            {proc.desc}
+                                        </div>
+                                    </div>
+
+                                    {/* Desktop row */}
+                                    <div className="hidden md:flex gap-4 items-center px-4 py-3">
+                                        <span className="font-mono text-xs shrink-0 transition-colors duration-150"
+                                              style={{ width: "80px",
+                                                       color: proc.status === "RUNNING" ? "var(--secondary-container)" : "var(--on-surface-variant)" }}>
+                                            {proc.status === "RUNNING" ? "● " : "○ "}{proc.status}
+                                        </span>
+                                        <span className="font-mono text-xs shrink-0 transition-colors duration-150 group-hover:text-[var(--on-surface)]"
+                                              style={{ width: "64px", color: "var(--on-surface-variant)" }}>
+                                            {proc.pid}
+                                        </span>
+                                        <span className="font-mono text-xs shrink-0 transition-colors duration-150 group-hover:text-[var(--secondary-container)]"
+                                              style={{ width: "160px", color: "var(--primary)" }}>
+                                            {proc.name}
+                                        </span>
+                                        <span className="font-mono text-xs transition-colors duration-150 group-hover:text-[var(--on-surface)]"
+                                              style={{ color: "var(--on-surface-variant)" }}>
+                                            {proc.desc}
+                                        </span>
+                                    </div>
                                 </div>
                             ))}
                         </div>

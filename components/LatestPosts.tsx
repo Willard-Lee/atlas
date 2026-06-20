@@ -29,7 +29,7 @@ export default function LatestPosts() {
 
             {/* Column labels */}
             <div
-                className="flex gap-3 mb-1 pb-2 font-mono text-xs border-b"
+                className="hidden md:flex gap-3 mb-1 pb-2 font-mono text-xs border-b"
                 style={{ color: "var(--outline)", borderColor: "var(--outline-variant)" }}
             >
                 <span className="w-24 shrink-0">TIMESTAMP</span>
@@ -47,31 +47,55 @@ export default function LatestPosts() {
                             href={href}
                             target={isExternal ? "_blank" : undefined}
                             rel={isExternal ? "noopener noreferrer" : undefined}
-                            className="group flex items-baseline gap-3 py-3 border-b transition-colors hover:bg-[var(--surface-container)]"
+                            className="group border-b transition-colors hover:bg-[var(--surface-container)]"
                             style={{ borderColor: "var(--outline-variant)" }}
                         >
-                            <span className="font-mono text-xs w-24 shrink-0" style={{ color: "var(--outline)" }}>
-                                {post.frontmatter.date}
-                            </span>
-                            <span className="font-mono text-xs w-10 shrink-0" style={{ color: "var(--secondary-container)" }}>
-                                INFO
-                            </span>
-                            <span
-                                className="font-sans text-sm truncate transition-colors group-hover:text-[var(--primary)]"
-                                style={{ color: "var(--on-surface)" }}
-                            >
-                                {post.frontmatter.title}
-                            </span>
-                            <div className="ml-auto gap-2 shrink-0 hidden sm:flex">
-                                {post.frontmatter.tags?.slice(0, 2).map((tag) => (
-                                    <span
-                                        key={tag}
-                                        className="font-mono text-xs px-1.5 py-0.5"
-                                        style={{ background: "var(--surface-container-high)", color: "var(--on-surface-variant)" }}
-                                    >
-                                        {tag}
+                            {/* Mobile card */}
+                            <div className="md:hidden flex flex-col gap-0.5 py-3 px-1">
+                                <div className="flex items-center gap-2">
+                                    <span className="font-mono text-xs" style={{ color: "var(--outline)" }}>
+                                        {post.frontmatter.date}
                                     </span>
-                                ))}
+                                    <span className="font-mono text-xs" style={{ color: "var(--secondary-container)" }}>
+                                        · [INFO]
+                                    </span>
+                                </div>
+                                <div className="flex items-center justify-between gap-2">
+                                    <span
+                                        className="font-sans text-sm transition-colors group-hover:text-[var(--primary)]"
+                                        style={{ color: "var(--on-surface)" }}
+                                    >
+                                        {post.frontmatter.title}
+                                    </span>
+                                    <span className="font-mono text-xs shrink-0" style={{ color: "var(--primary)" }}>→</span>
+                                </div>
+                            </div>
+
+                            {/* Desktop row */}
+                            <div className="hidden md:flex items-baseline gap-3 py-3">
+                                <span className="font-mono text-xs w-24 shrink-0" style={{ color: "var(--outline)" }}>
+                                    {post.frontmatter.date}
+                                </span>
+                                <span className="font-mono text-xs w-10 shrink-0" style={{ color: "var(--secondary-container)" }}>
+                                    INFO
+                                </span>
+                                <span
+                                    className="font-sans text-sm truncate transition-colors group-hover:text-[var(--primary)]"
+                                    style={{ color: "var(--on-surface)" }}
+                                >
+                                    {post.frontmatter.title}
+                                </span>
+                                <div className="ml-auto gap-2 shrink-0 flex">
+                                    {post.frontmatter.tags?.slice(0, 2).map((tag) => (
+                                        <span
+                                            key={tag}
+                                            className="font-mono text-xs px-1.5 py-0.5"
+                                            style={{ background: "var(--surface-container-high)", color: "var(--on-surface-variant)" }}
+                                        >
+                                            {tag}
+                                        </span>
+                                    ))}
+                                </div>
                             </div>
                         </Link>
                     </StaggerItem>

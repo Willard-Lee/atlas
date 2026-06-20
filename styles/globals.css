@@ -441,6 +441,24 @@ body {
 
 /* .glow is handled by @utility glow above */
 
+/* ── Skill row responsive grid ───────────────────────────────────────────── */
+
+.skill-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.5rem;
+}
+@media (min-width: 640px) {
+  .skill-row { grid-template-columns: 9rem 5.5rem 1fr auto; }
+}
+@media (min-width: 768px) {
+  .skill-row { grid-template-columns: 11rem 6.5rem 1fr auto; }
+}
+
+/* Tech icon size — smaller on mobile */
+.tech-icon-sm { width: 20px; height: 20px; }
+@media (min-width: 640px) { .tech-icon-sm { width: 32px; height: 32px; } }
+
 /* ── Tech icon chips (skill matrix) ─────────────────────────────────────── */
 
 .tech-icon {

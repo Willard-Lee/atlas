@@ -72,7 +72,7 @@ export default function Navigation() {
                             aria-label="Toggle menu"
                             onClick={() => setMobileOpen((v) => !v)}
                             whileTap={{ scale: 0.9 }}
-                            className="md:hidden flex items-center justify-center w-8 h-8 transition-colors"
+                            className="hidden flex items-center justify-center w-8 h-8 transition-colors"
                             style={{ color: "var(--on-surface-variant)" }}
                         >
                             <AnimatePresence mode="wait" initial={false}>
@@ -97,7 +97,8 @@ export default function Navigation() {
                     </div>
                 </div>
 
-                {/* Mobile menu */}
+                {/* Mobile menu — hidden; MobileTabBar handles nav on small screens */}
+                <div className="hidden">
                 <AnimatePresence>
                     {mobileOpen && (
                         <motion.div
@@ -146,6 +147,7 @@ export default function Navigation() {
                         </motion.div>
                     )}
                 </AnimatePresence>
+                </div>
             </nav>
 
             <SearchModal isOpen={searchOpen} onClose={() => setSearchOpen(false)} />

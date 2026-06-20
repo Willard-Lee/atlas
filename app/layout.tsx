@@ -6,6 +6,7 @@ import Footer from "@/components/Footer"
 import BackToTop from "@/components/BackToTop"
 import PageTransition from "@/components/motion/PageTransition"
 import Cursor from "@/components/Cursor"
+import MobileTabBar from "@/components/MobileTabBar"
 import "@/styles/globals.css"
 import "katex/dist/katex.min.css"
 
@@ -52,7 +53,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <head>
                 <link rel="icon" href="/favicon.ico" />
             </head>
-            <body className="min-h-screen flex flex-col">
+            <body className="min-h-screen flex flex-col pb-14 lg:pb-0">
                 <Providers>
                     <a href="#main" className="sr-only focus:not-sr-only">Skip to content</a>
                     <Navigation />
@@ -62,6 +63,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                     <Footer />
                     <BackToTop />
                     <Cursor />
+                    <MobileTabBar />
                 </Providers>
             </body>
         </html>

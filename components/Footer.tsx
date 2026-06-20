@@ -20,8 +20,8 @@ const socialIcons: Record<string, React.ReactNode> = {
 
 export default function Footer() {
     return (
-        <footer className="w-full mt-auto" style={{ borderTop: "1px solid var(--outline-variant)" }}>
-            <div className="flex items-center justify-between px-8 h-14 mx-auto w-full">
+        <footer className="w-full mt-auto pb-16 lg:pb-0" style={{ borderTop: "1px solid var(--outline-variant)" }}>
+            <div className="flex items-center justify-between px-6 md:px-8 h-14 mx-auto w-full">
 
                 {/* Brand */}
                 <Link
@@ -33,7 +33,7 @@ export default function Footer() {
                 </Link>
 
                 {/* Nav links */}
-                <ul className="flex items-center gap-8 list-none m-0 p-0">
+                <ul className="hidden md:flex items-center gap-8 list-none m-0 p-0">
                     {navLinks.map((link) => (
                         <li key={link.href}>
                             <Link

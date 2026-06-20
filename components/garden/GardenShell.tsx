@@ -15,8 +15,9 @@ export default function GardenShell({
     sidebar:  React.ReactNode;
     children: React.ReactNode;
 }) {
-    const [open, setOpen]   = useState(true);
-    const [ready, setReady] = useState(false);
+    const [open, setOpen]           = useState(true);
+    const [ready, setReady]         = useState(false);
+    const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
 
     useEffect(() => {
         const v = localStorage.getItem("garden-sidebar-open");
@@ -221,6 +222,91 @@ export default function GardenShell({
                     </motion.button>
                 </motion.div>
             </div>
+
+            {/* ── Mobile [ TREE ] trigger button ───────────────────────── */}
+            <motion.button
+                className="lg:hidden fixed right-4 z-40 font-mono text-xs px-2.5 py-1.5"
+                style={{
+                    bottom:      68, // sits above MobileTabBar (56px) + gap
+                    border:      "1px solid var(--primary)",
+                    color:       "var(--primary)",
+                    background:  "var(--surface-container-low)",
+                    boxShadow:   "0 0 12px rgba(201, 131, 226, 0.25)",
+                    letterSpacing: "0.1em",
+                }}
+                whileTap={{ scale: 0.93 }}
+                onClick={() => setMobileSheetOpen(true)}
+            >
+                [ TREE ]
+            </motion.button>
+
+            {/* ── Mobile bottom sheet ───────────────────────────────────── */}
+            <AnimatePresence>
+                {mobileSheetOpen && (
+                    <>
+                        {/* Backdrop */}
+                        <motion.div
+                            key="sheet-backdrop"
+                            className="lg:hidden fixed inset-0 z-40"
+                            style={{ background: "rgba(0,0,0,0.65)" }}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                            onClick={() => setMobileSheetOpen(false)}
+                        />
+
+                        {/* Sheet */}
+                        <motion.div
+                            key="sheet"
+                            className="lg:hidden fixed left-0 right-0 bottom-0 z-50 flex flex-col"
+                            style={{
+                                height:     "70vh",
+                                background: "var(--surface-container-low)",
+                                borderTop:  "2px solid var(--primary)",
+                            }}
+                            initial={{ y: "100%" }}
+                            animate={{ y: 0 }}
+                            exit={{ y: "100%" }}
+                            transition={spring}
+                        >
+                            {/* Sheet header */}
+                            <div
+                                className="flex items-center justify-between px-4 py-3 border-b shrink-0"
+                                style={{ borderColor: "var(--outline-variant)" }}
+                            >
+                                <span
+                                    className="font-mono text-xs font-bold tracking-widest"
+                                    style={{ color: "var(--primary)" }}
+                                >
+                                    [ GARDEN.TREE ]
+                                </span>
+                                <button
+                                    onClick={() => setMobileSheetOpen(false)}
+                                    className="font-mono text-xs px-2 py-1"
+                                    style={{
+                                        color:  "var(--on-surface-variant)",
+                                        border: "1px solid var(--outline-variant)",
+                                    }}
+                                >
+                                    [ × ]
+                                </button>
+                            </div>
+
+                            {/* Tree scroll area */}
+                            <div
+                                className="flex-1 overflow-y-auto min-h-0"
+                                style={{
+                                    scrollbarWidth: "thin",
+                                    scrollbarColor: "var(--outline-variant) transparent",
+                                }}
+                            >
+                                {sidebar}
+                            </div>
+                        </motion.div>
+                    </>
+                )}
+            </AnimatePresence>
 
             {/* ── Main content — always full width ─────────────────────── */}
             <main className="min-h-0">
