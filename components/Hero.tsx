@@ -87,14 +87,14 @@ export default function Hero() {
     }, [lineIdx, charIdx]);
 
     return (
-        <section className="dot-grid relative min-h-[94vh] px-6 md:px-16 py-16 md:py-20 grid grid-cols-1 lg:grid-cols-5 gap-12 lg:gap-0 items-center">
+        <section className="dot-grid relative min-h-[80vh] md:min-h-[94vh] px-6 md:px-16 py-16 md:py-20 grid grid-cols-1 lg:grid-cols-5 gap-12 lg:gap-0 items-center">
 
             {/* ── Left (3/5): title + boot sequence + CTA ─────────────────── */}
             <div
                 className="lg:col-span-3 space-y-8 lg:pr-16"
             >
                 <motion.h1
-                    className="glow font-display text-7xl md:text-8xl font-bold tracking-tight"
+                    className="glow font-display text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-bold tracking-tight"
                     initial={{ opacity: 0, y: -12 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.45 }}

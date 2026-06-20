@@ -63,7 +63,7 @@ export default function Navigation() {
                             onClick={() => setSearchOpen(true)}
                             whileHover={{ scale: 1.15 }}
                             whileTap={{ scale: 0.9 }}
-                            className="flex items-center justify-center w-8 h-8 transition-colors hover:text-[var(--primary)]"
+                            className="flex items-center justify-center w-10 h-10 transition-colors hover:text-[var(--primary)]"
                             style={{ color: "var(--on-surface-variant)" }}
                         >
                             <Search size={16} strokeWidth={1.5} />

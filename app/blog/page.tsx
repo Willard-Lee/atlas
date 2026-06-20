@@ -25,12 +25,12 @@ export default async function BlogPage() {
         <main className="w-full">
 
             {/* Header — full width */}
-            <div className="dot-grid px-8 md:px-16 py-20 mb-0">
+            <div className="dot-grid px-4 sm:px-8 md:px-16 py-12 md:py-20 mb-0">
                 <p className="font-mono text-xs tracking-widest mb-3"
                    style={{ color: "var(--on-surface-variant)" }}>
                     [ SIGNAL.STATION ] · RECEIVER: ONLINE
                 </p>
-                <h1 className="font-display text-6xl font-bold mb-6 glow">
+                <h1 className="font-display text-3xl sm:text-5xl md:text-6xl font-bold mb-6 glow">
                     TRANSMISSION_LOG
                 </h1>
 
@@ -40,7 +40,7 @@ export default async function BlogPage() {
                         { label: "FREQUENCIES",      value: String(Object.keys(CATEGORIES).length).padStart(2, "0") },
                     ].map(({ label, value }) => (
                         <div key={label} className="flex items-baseline gap-2">
-                            <span className="font-display text-4xl font-bold" style={{ color: "var(--on-surface)" }}>
+                            <span className="font-display text-2xl sm:text-4xl font-bold" style={{ color: "var(--on-surface)" }}>
                                 {value}
                             </span>
                             <span className="font-mono text-xs tracking-widest" style={{ color: "var(--on-surface-variant)" }}>
@@ -56,7 +56,7 @@ export default async function BlogPage() {
             </div>
 
             {/* Two-column body */}
-            <div className="grid grid-cols-1 lg:grid-cols-[1fr_240px] gap-10 px-8 md:px-16 pb-24 pt-12">
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_240px] gap-10 px-4 sm:px-8 md:px-16 pb-24 pt-12">
 
                 {/* ── Blog grid ── */}
                 <div className="min-w-0">

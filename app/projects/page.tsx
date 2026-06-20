@@ -28,12 +28,12 @@ export default async function ProjectPage() {
         <main className="w-full">
 
             {/* Header — full width */}
-            <div className="dot-grid px-8 md:px-16 py-20 mb-0">
+            <div className="dot-grid px-4 sm:px-8 md:px-16 py-12 md:py-20 mb-0">
                 <p className="font-mono text-xs tracking-widest mb-3"
                    style={{ color: "var(--on-surface-variant)" }}>
                     [ MISSION.CONTROL ] · DEPLOY_ENV: PRODUCTION
                 </p>
-                <h1 className="font-display text-6xl font-bold mb-6 glow">
+                <h1 className="font-display text-3xl sm:text-5xl md:text-6xl font-bold mb-6 glow">
                     BUILD.MANIFEST
                 </h1>
 
@@ -45,7 +45,7 @@ export default async function ProjectPage() {
                         { label: "DEPRECATED", value: archived,        color: "var(--on-surface-variant)" },
                     ].map(({ label, value, color }) => (
                         <div key={label} className="flex items-baseline gap-2">
-                            <span className="font-display text-4xl font-bold" style={{ color }}>
+                            <span className="font-display text-2xl sm:text-4xl font-bold" style={{ color }}>
                                 {String(value).padStart(2, "0")}
                             </span>
                             <span className="font-mono text-xs tracking-widest"
@@ -58,7 +58,7 @@ export default async function ProjectPage() {
             </div>
 
             {/* Two-column body */}
-            <div className="grid grid-cols-1 lg:grid-cols-[1fr_240px] gap-10 px-8 md:px-16 pb-24 pt-12">
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_240px] gap-10 px-4 sm:px-8 md:px-16 pb-24 pt-12">
 
                 {/* ── Projects grid ── */}
                 <div className="min-w-0">

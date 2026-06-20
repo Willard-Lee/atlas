@@ -53,12 +53,12 @@ export default async function ResourcePage() {
         <main className="w-full">
 
             {/* Header — full width */}
-            <div className="dot-grid px-8 md:px-16 py-20 mb-0">
+            <div className="dot-grid px-4 sm:px-8 md:px-16 py-12 md:py-20 mb-0">
                 <p className="font-mono text-xs tracking-widest mb-3"
                    style={{ color: "var(--on-surface-variant)" }}>
                     [ RESOURCES.DB ] · INDEX: ACTIVE
                 </p>
-                <h1 className="font-display text-6xl font-bold mb-4 glow">
+                <h1 className="font-display text-3xl sm:text-5xl md:text-6xl font-bold mb-4 glow">
                     SIGNAL.ARCHIVE
                 </h1>
                 <p className="font-mono text-xs tracking-widest mb-8"
@@ -83,7 +83,7 @@ export default async function ResourcePage() {
             </div>
 
             {/* Two-column body */}
-            <div className="grid grid-cols-1 lg:grid-cols-[1fr_240px] gap-10 px-8 md:px-16 pb-24 pt-12">
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_240px] gap-10 px-4 sm:px-8 md:px-16 pb-24 pt-12">
 
                 {/* ── Resource list ── */}
                 <div className="min-w-0 space-y-16">

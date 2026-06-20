@@ -1,4 +1,6 @@
 import { socialLinks } from "@/lib/links";
+import { getEntries } from "@/lib/content";
+import type { ProjectFrontmatter } from "@/lib/types";
 import FadeUp from "@/components/motion/FadeUp";
 import BootSequence from "@/components/motion/BootSequence";
 import AnimatedBar from "@/components/motion/AnimatedBar";
@@ -64,11 +66,11 @@ const skills: Record<string, { name: string; level: number }[]> = {
     ],
 };
 
-const processes = [
-    { status: "RUNNING", pid: "0x1A2F", name: "malaysian-rag",  desc: "RAG system for Malaysian language + context" },
-    { status: "RUNNING", pid: "0x3B4C", name: "quant-research", desc: "Learning quantitative finance models" },
-    { status: "IDLE",    pid: "0x5D6E", name: "next-project",   desc: "TBD" },
-];
+function slugToPid(slug: string): string {
+    let h = 0x1000;
+    for (const c of slug) h = ((h * 31) + c.charCodeAt(0)) & 0xFFFF;
+    return `0x${h.toString(16).toUpperCase().padStart(4, "0")}`;
+}
 
 const categoryColor: Record<string, string> = {
     "LANGUAGES": "var(--primary)",
@@ -115,6 +117,22 @@ function langColor(level: string) {
 }
 
 export default function AboutPage() {
+    const projects = getEntries<ProjectFrontmatter>("project");
+    const statusOrder: Record<string, number> = { live: 0, wip: 1, archived: 2 };
+    const processes = [...projects]
+        .sort((a, b) =>
+            (statusOrder[a.frontmatter.status] ?? 9) - (statusOrder[b.frontmatter.status] ?? 9)
+            || b.frontmatter.date.localeCompare(a.frontmatter.date)
+        )
+        .map((p) => ({
+            pid:    slugToPid(p.slug),
+            status: p.frontmatter.status === "live" ? "RUNNING"
+                  : p.frontmatter.status === "wip"  ? "STAGING"
+                  : "IDLE",
+            name:   p.slug,
+            desc:   p.frontmatter.summary ?? p.frontmatter.title,
+        }));
+
     return (
         <main className="w-full">
 
@@ -123,7 +141,7 @@ export default function AboutPage() {
                 <div className="mb-6">
                     <BootSequence lines={bootLines} />
                 </div>
-                <h1 className="font-display text-5xl md:text-7xl font-bold mb-2 glow">
+                <h1 className="font-display text-3xl sm:text-5xl md:text-7xl font-bold mb-2 glow">
                     WILLARD.SYS
                 </h1>
                 <p className="font-mono text-xs tracking-widest mt-3"
@@ -136,7 +154,7 @@ export default function AboutPage() {
             <div className="flex flex-col md:flex-row gap-0 border-t" style={{ borderColor: "var(--outline-variant)" }}>
 
                 {/* Left — System panel */}
-                <aside className="md:w-72 shrink-0 border-b md:border-b-0 md:border-r px-8 py-12"
+                <aside className="md:w-72 shrink-0 border-b md:border-b-0 md:border-r px-4 md:px-8 py-8 md:py-12"
                        style={{ borderColor: "var(--outline-variant)" }}>
                     <FadeUp>
                         <p className="font-mono text-xs font-bold tracking-widest mb-6"
@@ -429,8 +447,10 @@ export default function AboutPage() {
                                     <div className="md:hidden px-4 py-3 space-y-0.5">
                                         <div className="flex items-center gap-3">
                                             <span className="font-mono text-xs"
-                                                  style={{ color: proc.status === "RUNNING" ? "var(--secondary-container)" : "var(--on-surface-variant)" }}>
-                                                {proc.status === "RUNNING" ? "●" : "○"} {proc.status}
+                                                  style={{ color: proc.status === "RUNNING" ? "var(--secondary-container)"
+                                                               : proc.status === "STAGING"  ? "var(--primary-container)"
+                                                               : "var(--on-surface-variant)" }}>
+                                                {proc.status === "RUNNING" ? "●" : proc.status === "STAGING" ? "◐" : "○"} {proc.status}
                                             </span>
                                             <span className="font-mono text-xs" style={{ color: "var(--on-surface-variant)" }}>
                                                 {proc.pid}
@@ -448,8 +468,10 @@ export default function AboutPage() {
                                     <div className="hidden md:flex gap-4 items-center px-4 py-3">
                                         <span className="font-mono text-xs shrink-0 transition-colors duration-150"
                                               style={{ width: "80px",
-                                                       color: proc.status === "RUNNING" ? "var(--secondary-container)" : "var(--on-surface-variant)" }}>
-                                            {proc.status === "RUNNING" ? "● " : "○ "}{proc.status}
+                                                       color: proc.status === "RUNNING" ? "var(--secondary-container)"
+                                                            : proc.status === "STAGING"  ? "var(--primary-container)"
+                                                            : "var(--on-surface-variant)" }}>
+                                            {proc.status === "RUNNING" ? "● " : proc.status === "STAGING" ? "◐ " : "○ "}{proc.status}
                                         </span>
                                         <span className="font-mono text-xs shrink-0 transition-colors duration-150 group-hover:text-[var(--on-surface)]"
                                               style={{ width: "64px", color: "var(--on-surface-variant)" }}>

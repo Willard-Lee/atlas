@@ -35,12 +35,12 @@ export default async function GardenPage() {
         <main className="w-full">
 
             {/* Header — full width */}
-            <div className="dot-grid px-8 md:px-16 py-20 mb-0">
+            <div className="dot-grid px-4 sm:px-8 md:px-16 py-12 md:py-20 mb-0">
                 <p className="font-mono text-xs tracking-widest mb-3"
                    style={{ color: "var(--on-surface-variant)" }}>
                     [ GARDEN.DB ] · NODES: ACTIVE
                 </p>
-                <h1 className="font-display text-6xl font-bold mb-4 glow">
+                <h1 className="font-display text-3xl sm:text-5xl md:text-6xl font-bold mb-4 glow">
                     LATENT.NODES
                 </h1>
                 <p className="font-mono text-xs tracking-widest mb-8"
@@ -62,7 +62,7 @@ export default async function GardenPage() {
             </div>
 
             {/* Two-column body */}
-            <div className="grid grid-cols-1 lg:grid-cols-[1fr_240px] gap-10 px-8 md:px-16 pb-24 pt-12">
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_240px] gap-10 px-4 sm:px-8 md:px-16 pb-24 pt-12">
 
                 {/* ── Note list ── */}
                 <div className="min-w-0 space-y-16">
@@ -93,7 +93,7 @@ export default async function GardenPage() {
                                         </div>
 
                                         <div className="flex items-center gap-4 flex-shrink-0">
-                                            <span className="font-mono text-xs tracking-widest"
+                                            <span className="hidden sm:inline font-mono text-xs tracking-widest"
                                                   style={{ color: maturityColor[note.frontmatter.maturity] }}>
                                                 {note.frontmatter.maturity.toUpperCase()}
                                             </span>
