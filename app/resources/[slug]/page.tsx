@@ -46,7 +46,7 @@ export default async function ResourceDetailPage({ params }: { params: Promise<{
 
             {/* Hero header — dot-grid full-bleed, inner content width-locked to body */}
             <div className="dot-grid py-16 mb-0">
-                <div className="max-w-6xl mx-auto px-6 md:px-8">
+                <div className="max-w-5xl mx-auto px-6 md:px-8">
                     <div className="flex items-center gap-2 mb-4">
                         <Link href="/resources"
                               className="font-mono text-xs tracking-widest transition-colors hover:text-[var(--primary)]"
@@ -83,7 +83,7 @@ export default async function ResourceDetailPage({ params }: { params: Promise<{
             </div>
 
             {/* Two-column body — max-w matches hero inner so left edges align */}
-            <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-12 px-6 md:px-8 pb-24 pt-10">
+            <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-12 px-6 md:px-8 pb-24 pt-10">
 
                 {/* ── Main content ── */}
                 <div className="min-w-0">

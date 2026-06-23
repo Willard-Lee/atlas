@@ -2,8 +2,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { Search, Menu, X } from "lucide-react";
+import { Search, Menu, X, Sun, Moon } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTheme } from "next-themes";
 import { navLinks, socialLinks } from "../lib/links";
 import SearchModal from "./Search";
 
@@ -12,12 +13,14 @@ export default function Navigation() {
     const [searchOpen, setSearchOpen] = useState(false);
     const [mobileOpen, setMobileOpen] = useState(false);
 
+    const { theme, setTheme } = useTheme();
+
     const isActive = (href: string) =>
         href === "/" ? pathname === "/" : pathname.startsWith(href);
 
     return (
         <>
-            <nav className="w-full sticky top-0 z-40"
+            <nav data-focus-hide className="w-full sticky top-0 z-40"
                  style={{ borderBottom: "1px solid var(--outline-variant)", background: "var(--background)" }}>
                 <div className="flex items-center justify-between px-8 h-14 mx-auto w-full">
 
@@ -56,8 +59,18 @@ export default function Navigation() {
                         ))}
                     </ul>
 
-                    {/* Right — Search + Mobile toggle */}
+                    {/* Right — Theme toggle + Search + Mobile toggle */}
                     <div className="flex items-center gap-4">
+                        <motion.button
+                            aria-label="Toggle theme"
+                            onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+                            whileHover={{ scale: 1.15 }}
+                            whileTap={{ scale: 0.9 }}
+                            className="flex items-center justify-center w-10 h-10 transition-colors hover:text-[var(--primary)]"
+                            style={{ color: "var(--on-surface-variant)" }}
+                        >
+                            {theme === "light" ? <Moon size={16} strokeWidth={1.5} /> : <Sun size={16} strokeWidth={1.5} />}
+                        </motion.button>
                         <motion.button
                             aria-label="Search"
                             onClick={() => setSearchOpen(true)}

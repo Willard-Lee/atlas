@@ -20,6 +20,7 @@ export default function MobileTabBar() {
 
     return (
         <nav
+            data-focus-hide
             className="lg:hidden fixed bottom-0 left-0 right-0 z-50 flex h-14"
             style={{
                 background: "var(--surface-container-low)",

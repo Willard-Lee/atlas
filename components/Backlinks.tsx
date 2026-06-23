@@ -6,26 +6,42 @@ export default function Backlinks({ url }: { url: string }) {
     if (links.length === 0) return null;
 
     return (
-        <div className="border" style={{ borderColor: "var(--outline-variant)" }}>
-            <div className="px-3 py-2 border-b font-mono text-xs tracking-widest"
-                 style={{ borderColor: "var(--outline-variant)", color: "var(--on-surface-variant)", background: "var(--surface-container)" }}>
-                [ BACKLINKS ] · {links.length}
+        <section>
+            <div className="flex items-center gap-3 mb-4">
+                <span className="font-mono text-xs tracking-widest shrink-0"
+                      style={{ color: "var(--outline)" }}>
+                    REFERENCED.BY
+                </span>
+                <div className="flex-1 border-t" style={{ borderColor: "var(--outline-variant)" }} />
+                <span className="font-mono text-xs shrink-0"
+                      style={{ color: "var(--outline)" }}>
+                    {links.length}
+                </span>
             </div>
-            <ul className="divide-y" style={{ borderColor: "var(--outline-variant)" }}>
+
+            <div className="flex flex-col gap-1.5">
                 {links.map((entry) => (
-                    <li key={entry.url} className="group">
-                        <Link href={entry.url}
-                              className="flex items-center gap-2 px-3 py-2 transition-colors hover:bg-[var(--surface-container-high)]">
-                            <span className="font-mono text-xs transition-transform duration-150 group-hover:-translate-x-0.5"
-                                  style={{ color: "var(--primary)" }}>←</span>
-                            <span className="font-sans text-xs truncate transition-colors duration-150 group-hover:text-[var(--primary)]"
-                                  style={{ color: "var(--on-surface)" }}>
-                                {entry.frontmatter.title}
-                            </span>
-                        </Link>
-                    </li>
+                    <Link
+                        key={entry.url}
+                        href={entry.url}
+                        className="group flex items-center gap-3 px-4 py-3 border transition-colors hover:border-[var(--primary)] hover:bg-[var(--surface-container-low)]"
+                        style={{ borderColor: "var(--outline-variant)" }}
+                    >
+                        <span className="font-mono text-sm shrink-0 transition-transform duration-150 group-hover:-translate-x-0.5"
+                              style={{ color: "var(--primary)" }}>
+                            ←
+                        </span>
+                        <span className="font-sans text-sm flex-1 truncate transition-colors duration-150 group-hover:text-[var(--primary)]"
+                              style={{ color: "var(--on-surface)" }}>
+                            {entry.frontmatter.title}
+                        </span>
+                        <span className="font-mono text-xs shrink-0 tracking-widest"
+                              style={{ color: "var(--outline)" }}>
+                            BACKLINK
+                        </span>
+                    </Link>
                 ))}
-            </ul>
-        </div>
+            </div>
+        </section>
     );
 }

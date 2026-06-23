@@ -73,13 +73,89 @@
   --on-background:             #e5e2e1;
 
   /* Spacing */
-  --container-max:             1280px;
+  --container-max:             1024px;
   --gutter:                    1rem;
   --margin-x:                  2rem;
   --grid-unit:                 4px;
   --stack-sm:                  8px;
   --stack-md:                  16px;
   --stack-lg:                  32px;
+}
+
+/* ── Light mode — Phosphor Terminal ────────────────────────────────────── */
+/* Concept: white-phosphor CRT at full brightness. Same machine, different
+   emission state. Surfaces tinted with a faint violet cast (phosphor glass),
+   never generic white. Deep violet primary, dark teal secondary.              */
+html.light {
+  /* Surfaces — violet-tinted cream, layered inward */
+  --surface:                   #ece8f5;
+  --surface-dim:               #d3cedf;
+  --surface-bright:            #f8f6ff;
+  --surface-container-lowest:  #faf8ff;
+  --surface-container-low:     #f2eefc;
+  --surface-container:         #e9e4f7;
+  --surface-container-high:    #e0dced;
+  --surface-container-highest: #d8d4e5;
+  --surface-variant:           #ddd8ec;
+  --surface-tint:              #6200aa;
+
+  /* On-surface — purple-black (retains terminal text feel) */
+  --on-surface:                #100d18;  /* 15.4:1 on background */
+  --on-surface-variant:        #3d3650;  /*  8.9:1 on background */
+  --inverse-surface:           #1e1a28;
+  --inverse-on-surface:        #f2eefc;
+
+  /* Outlines — muted violet-gray */
+  --outline:                   #6a5888;  /* 6.1:1 */
+  --outline-variant:           #c2bad4;  /* subtle dot-grid */
+
+  /* Primary — deep violet, phosphor-screen accent */
+  --primary:                   #6200aa;  /* 9.1:1 on background */
+  --on-primary:                #ffffff;
+  --primary-container:         #edd9ff;
+  --on-primary-container:      #280040;
+  --inverse-primary:           #d0a4ff;
+  --primary-fixed:             #edd9ff;
+  --primary-fixed-dim:         #d0a4ff;
+  --on-primary-fixed:          #280040;
+  --on-primary-fixed-variant:  #5200a0;
+
+  /* Secondary — dark teal cyan (scan-line hue, used as inline text) */
+  --secondary:                 #00606e;
+  --on-secondary:              #ffffff;
+  --secondary-container:       #006575;  /* 6.2:1 as text on background */
+  --on-secondary-container:    #001f24;
+  --secondary-fixed:           #b0ecf8;
+  --secondary-fixed-dim:       #78d8e8;
+  --on-secondary-fixed:        #001f24;
+  --on-secondary-fixed-variant:#004f58;
+
+  /* Tertiary */
+  --tertiary:                  #505555;
+  --on-tertiary:               #ffffff;
+  --tertiary-container:        #d5dada;
+  --on-tertiary-container:     #0e1212;
+  --tertiary-fixed:            #d5dada;
+  --tertiary-fixed-dim:        #b8bebe;
+  --on-tertiary-fixed:         #0e1212;
+  --on-tertiary-fixed-variant: #3c3f3f;
+
+  /* Error */
+  --error:                     #ba1a1a;
+  --on-error:                  #ffffff;
+  --error-container:           #ffdad6;
+  --on-error-container:        #410002;
+
+  /* Background — phosphor screen off-white */
+  --background:                #f5f3fa;
+  --on-background:             #100d18;
+}
+
+/* Glow re-tuned for deep violet on light bg */
+html.light .glow {
+  text-shadow:
+    0 0 8px  rgba(98, 0, 170, 0.18),
+    0 0 24px rgba(98, 0, 170, 0.08);
 }
 
 @utility glow {
@@ -124,6 +200,11 @@
 }
 
 
+/* ── Focus mode — hides all chrome when .focus-mode is on <html> ────────── */
+html.focus-mode [data-focus-hide] {
+  display: none !important;
+}
+
 /* ── Base reset ─────────────────────────────────────────────────────────── */
 
 /* Sharp shape language — 0px radius everywhere per design spec */
@@ -136,6 +217,10 @@ html {
   font-size: 17px;
 }
 
+/* Hide default <summary> disclosure triangle */
+summary::-webkit-details-marker { display: none; }
+summary { list-style: none; }
+
 body {
   background: var(--background);
   color: var(--on-background);
@@ -146,15 +231,23 @@ body {
 
 .prose {
   color: var(--on-surface);
-  font-size: 1rem;
-  line-height: 1.8;
+  font-size: 1.0625rem;
+  line-height: 1.85;
 }
 
 .prose > *:first-child { margin-top: 0; }
 
 /* Paragraphs */
 .prose p {
-  margin-bottom: 1.25rem;
+  margin-bottom: 1.5rem;
+  color: var(--on-surface);
+  text-wrap: pretty;
+}
+
+/* Lead paragraph — first <p> gets a slightly larger, more inviting opener */
+.prose > p:first-of-type {
+  font-size: 1.0625rem;
+  line-height: 1.95;
   color: var(--on-surface);
 }
 
@@ -168,22 +261,49 @@ body {
   font-family: var(--font-display);
   font-weight: 700;
   line-height: 1.25;
-  margin-top: 2.5rem;
-  margin-bottom: 0.75rem;
+  margin-top: 3rem;
+  margin-bottom: 1rem;
   color: var(--on-surface);
-  /* offset anchor scroll so sticky navbar (56px) doesn't cover the heading */
   scroll-margin-top: 5rem;
 }
-.prose h2 {
-  font-size: 1.375rem;
-  color: var(--primary);
+
+/* H1 in prose body — major break */
+.prose h1 {
+  font-size: 1.875rem;
   border-bottom: 1px solid var(--outline-variant);
-  padding-bottom: 0.4rem;
+  padding-bottom: 0.75rem;
+  margin-top: 0;
 }
+
+/* H2 — section divider with left-bar accent */
+.prose h2 {
+  font-size: 1.5rem;
+  color: var(--primary);
+  border-left: 3px solid var(--primary);
+  padding-left: 0.875rem;
+  margin-top: 3.5rem;
+  margin-bottom: 1.25rem;
+  letter-spacing: -0.01em;
+}
+
+/* H3 — subsection, glyph prefix for quick scanning */
 .prose h3 {
   font-size: 1.125rem;
   color: var(--on-surface);
+  margin-top: 2.25rem;
 }
+.prose h3::before {
+  content: "▸ ";
+  color: var(--primary);
+  font-family: var(--font-mono);
+  font-size: 0.7em;
+  opacity: 0.65;
+}
+
+/* Tighten gap when H3 immediately follows H2 */
+.prose h2 + h3 { margin-top: 1.5rem; }
+
+/* H4/H5/H6 — labels and fine-grained sub-sections */
 .prose h4,
 .prose h5,
 .prose h6 {
@@ -212,11 +332,11 @@ body {
 /* Lists */
 .prose ul,
 .prose ol {
-  margin-bottom: 1.25rem;
+  margin-bottom: 1.5rem;
   padding-left: 1.5rem;
 }
 .prose ul { list-style: none; }
-.prose ul > li { position: relative; padding-left: 0.25rem; margin-bottom: 0.4rem; }
+.prose ul > li { position: relative; padding-left: 0.25rem; margin-bottom: 0.5rem; }
 .prose ul > li::before {
   content: "›";
   position: absolute;
@@ -230,7 +350,7 @@ body {
   font-family: var(--font-mono);
   font-size: 0.8rem;
 }
-.prose li { line-height: 1.7; margin-bottom: 0.4rem; }
+.prose li { line-height: 1.78; margin-bottom: 0.5rem; }
 
 /* GFM task lists */
 .prose ul:has(> li > input[type="checkbox"]) { padding-left: 0; }
@@ -271,16 +391,16 @@ body {
 /* Inline code */
 .prose :not(pre) > code {
   font-family: var(--font-mono);
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
   background: var(--surface-container-high);
   color: var(--primary);
-  padding: 0.1rem 0.35rem;
+  padding: 0.15rem 0.4rem;
   border: 1px solid var(--outline-variant);
 }
 
 /* Code blocks — rehype-pretty-code wraps in <figure> */
 .prose figure[data-rehype-pretty-code-figure] {
-  margin: 1.5rem 0;
+  margin: 2rem 0;
   border: 1px solid var(--outline-variant);
   overflow: hidden;
 }
@@ -313,29 +433,30 @@ body {
 .prose pre:not([data-rehype-pretty-code-figure] pre) {
   background: #08080f;
   border: 1px solid var(--outline-variant);
-  padding: 1rem 1.25rem;
+  padding: 1.125rem 1.375rem;
   overflow-x: auto;
   font-family: var(--font-mono);
   font-size: 0.8125rem;
-  line-height: 1.65;
-  margin-bottom: 1.5rem;
+  line-height: 1.7;
+  margin-bottom: 2rem;
   color: var(--on-surface);
 }
 
 /* Plain blockquote (not a callout) */
 .prose blockquote:not(.callout) {
-  border-left: 2px solid var(--outline-variant);
-  padding-left: 1rem;
-  margin: 0 0 1.25rem;
+  border-left: 3px solid var(--primary);
+  padding: 0.875rem 1.25rem;
+  margin: 0 0 1.75rem;
   color: var(--on-surface-variant);
   font-style: italic;
+  background: color-mix(in srgb, var(--primary) 5%, var(--surface-container-low));
 }
 
 /* hr */
 .prose hr {
   border: none;
   border-top: 1px solid var(--outline-variant);
-  margin: 2rem 0;
+  margin: 2.5rem 0;
 }
 
 /* Images */

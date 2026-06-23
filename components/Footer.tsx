@@ -20,7 +20,7 @@ const socialIcons: Record<string, React.ReactNode> = {
 
 export default function Footer() {
     return (
-        <footer className="w-full mt-auto pb-16 lg:pb-0" style={{ borderTop: "1px solid var(--outline-variant)" }}>
+        <footer data-focus-hide className="w-full mt-auto pb-16 lg:pb-0" style={{ borderTop: "1px solid var(--outline-variant)" }}>
             <div className="flex items-center justify-between px-6 md:px-8 h-14 mx-auto w-full">
 
                 {/* Brand */}

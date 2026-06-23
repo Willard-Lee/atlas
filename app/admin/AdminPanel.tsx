@@ -78,10 +78,10 @@ const SNIPPET_GROUPS: (Snippet | null)[] = [
     { label: "H3",   title: "Heading 3",    text: "\n### Heading\n\n",                          select: [5, 12],  icon: <TbH3 size={15} /> },
     null,
     // ── Inline formatting
-    { label: "bold", title: "Bold",         text: "**text**",                                   select: [2, 6],   icon: <TbBold size={14} /> },
-    { label: "em",   title: "Italic",       text: "_text_",                                     select: [1, 5],   icon: <TbItalic size={14} /> },
-    { label: "`c`",  title: "Inline code",  text: "`code`",                                     select: [1, 5],   icon: <TbCode size={14} /> },
-    { label: "```",  title: "Code block",   text: "\n```typescript\n\n```\n",                   select: [16, 16], icon: <TbFileCode size={14} /> },
+    { label: "bold", title: "Bold (Ctrl+B)",         text: "**text**",                                   select: [2, 6],   icon: <TbBold size={14} /> },
+    { label: "em",   title: "Italic (Ctrl+I)",       text: "_text_",                                     select: [1, 5],   icon: <TbItalic size={14} /> },
+    { label: "`c`",  title: "Inline code (Ctrl+E)",  text: "`code`",                                     select: [1, 5],   icon: <TbCode size={14} /> },
+    { label: "```",  title: "Code block (Ctrl+Shift+E)", text: "\n```typescript\n\n```\n",               select: [16, 16], icon: <TbFileCode size={14} /> },
     null,
     // ── Callouts
     { label: "note", title: "NOTE callout", text: "\n> [!NOTE] Title\n> Content\n\n",           select: [17, 22], icon: <TbInfoCircle size={14} />,      accent: "#00dbe9" },
@@ -97,8 +97,8 @@ const SNIPPET_GROUPS: (Snippet | null)[] = [
     { label: "tbl",  title: "GFM table",    text: "\n| Col A | Col B |\n|-------|-------|\n| cell  | cell  |\n\n",                                select: [3, 8],   icon: <TbTable size={14} /> },
     null,
     // ── Links
-    { label: "[[]]", title: "Wikilink",     text: "[[slug]]",                                   select: [2, 6],   icon: <TbBrackets size={14} /> },
-    { label: "link", title: "Link",         text: "[text](url)",                                select: [1, 5],   icon: <TbLink size={14} /> },
+    { label: "[[]]", title: "Wikilink",              text: "[[slug]]",                                   select: [2, 6],   icon: <TbBrackets size={14} /> },
+    { label: "link", title: "Link (Ctrl+K)",         text: "[text](url)",                                select: [1, 5],   icon: <TbLink size={14} /> },
 ];
 
 
@@ -116,6 +116,26 @@ function insertSnippet(
     const selStart = snippet.select ? start + snippet.select[0] : start + snippet.text.length;
     const selEnd   = snippet.select ? start + snippet.select[1] : start + snippet.text.length;
     requestAnimationFrame(() => { el.focus(); el.setSelectionRange(selStart, selEnd); });
+}
+
+function wrapSelection(
+    ref: RefObject<HTMLTextAreaElement | null>,
+    body: string,
+    setBody: (v: string) => void,
+    before: string,
+    after: string,
+    placeholder: string,
+) {
+    const el = ref.current;
+    if (!el) return;
+    const start  = el.selectionStart ?? 0;
+    const end    = el.selectionEnd   ?? 0;
+    const sel    = body.slice(start, end) || placeholder;
+    setBody(body.slice(0, start) + before + sel + after + body.slice(end));
+    requestAnimationFrame(() => {
+        el.focus();
+        el.setSelectionRange(start + before.length, start + before.length + sel.length);
+    });
 }
 
 // ── Resize handle ─────────────────────────────────────────────────────────────
@@ -897,7 +917,33 @@ export default function AdminPanel() {
                             ref={textareaRef}
                             value={body}
                             onChange={(e) => setBody(e.target.value)}
-                            placeholder={"## Start writing...\n\nClick toolbar buttons to insert components.\n\n> [!NOTE] Callout\n> Content here.\n\n$$E = mc^2$$"}
+                            onKeyDown={(e) => {
+                                const ctrl = e.ctrlKey || e.metaKey;
+                                if (ctrl && e.key === "b") {
+                                    e.preventDefault();
+                                    wrapSelection(textareaRef, body, setBody, "**", "**", "text");
+                                } else if (ctrl && e.key === "i") {
+                                    e.preventDefault();
+                                    wrapSelection(textareaRef, body, setBody, "_", "_", "text");
+                                } else if (ctrl && e.key === "k") {
+                                    e.preventDefault();
+                                    wrapSelection(textareaRef, body, setBody, "[", "](url)", "text");
+                                } else if (ctrl && e.shiftKey && e.key === "E") {
+                                    e.preventDefault();
+                                    insertSnippet(textareaRef, { label: "", title: "", text: "\n```typescript\n\n```\n", select: [16, 16] }, body, setBody);
+                                } else if (ctrl && e.key === "e") {
+                                    e.preventDefault();
+                                    wrapSelection(textareaRef, body, setBody, "`", "`", "code");
+                                } else if (e.key === "Tab") {
+                                    e.preventDefault();
+                                    const el = textareaRef.current!;
+                                    const s = el.selectionStart;
+                                    const newBody = body.slice(0, s) + "  " + body.slice(s);
+                                    setBody(newBody);
+                                    requestAnimationFrame(() => { el.focus(); el.setSelectionRange(s + 2, s + 2); });
+                                }
+                            }}
+                            placeholder={"## Start writing...\n\nClick toolbar buttons or use shortcuts: Ctrl+B bold · Ctrl+I italic · Ctrl+K link · Ctrl+E code · Tab indent\n\n> [!NOTE] Callout\n> Content here.\n\n$$E = mc^2$$"}
                             className="flex-1 w-full px-6 py-4 text-sm leading-relaxed resize-none outline-none bg-transparent font-mono"
                             style={{ color: "var(--on-surface)" }}
                         />

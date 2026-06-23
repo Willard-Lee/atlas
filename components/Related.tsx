@@ -20,34 +20,48 @@ export default function Related({ url }: { url: string }) {
     if (links.length === 0) return null;
 
     return (
-        <div className="border" style={{ borderColor: "var(--outline-variant)" }}>
-            <div className="px-3 py-2 border-b font-mono text-xs tracking-widest"
-                 style={{ borderColor: "var(--outline-variant)", color: "var(--on-surface-variant)", background: "var(--surface-container)" }}>
-                [ RELATED ] · {links.length}
+        <section>
+            <div className="flex items-center gap-3 mb-4">
+                <span className="font-mono text-xs tracking-widest shrink-0"
+                      style={{ color: "var(--outline)" }}>
+                    RELATED.NODES
+                </span>
+                <div className="flex-1 border-t" style={{ borderColor: "var(--outline-variant)" }} />
+                <span className="font-mono text-xs shrink-0"
+                      style={{ color: "var(--outline)" }}>
+                    {links.length}
+                </span>
             </div>
-            <ul className="divide-y" style={{ borderColor: "var(--outline-variant)" }}>
-                {links.map((entry) => (
-                    <li key={entry.url} className="group">
-                        <Link href={entry.url}
-                              className="flex items-start gap-2 px-3 py-2.5 transition-colors hover:bg-[var(--surface-container-high)]">
-                            <span className="font-mono text-xs mt-0.5 shrink-0 transition-transform duration-150 group-hover:scale-125"
-                                  style={{ color: typeColor[entry.type] ?? "var(--on-surface-variant)" }}>
-                                ■
-                            </span>
-                            <div className="min-w-0">
-                                <p className="font-sans text-xs truncate transition-colors duration-150 group-hover:text-[var(--primary)]"
-                                   style={{ color: "var(--on-surface)" }}>
-                                    {entry.frontmatter.title}
-                                </p>
-                                <p className="font-mono text-xs mt-0.5"
-                                   style={{ color: typeColor[entry.type] ?? "var(--on-surface-variant)" }}>
-                                    {typeLabel[entry.type] ?? entry.type.toUpperCase()}
-                                </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {links.map((entry) => {
+                    const color = typeColor[entry.type] ?? "var(--on-surface-variant)";
+                    const label = typeLabel[entry.type] ?? entry.type.toUpperCase();
+                    return (
+                        <Link
+                            key={entry.url}
+                            href={entry.url}
+                            className="group flex flex-col gap-3 p-4 border transition-colors hover:border-[var(--primary)]"
+                            style={{ borderColor: "var(--outline-variant)" }}
+                        >
+                            <div className="flex items-center justify-between">
+                                <span className="font-mono text-xs tracking-widest"
+                                      style={{ color }}>
+                                    ■ {label}
+                                </span>
+                                <span className="font-mono text-xs transition-transform duration-150 group-hover:translate-x-1"
+                                      style={{ color: "var(--outline)" }}>
+                                    →
+                                </span>
                             </div>
+                            <p className="font-sans text-sm leading-snug transition-colors duration-150 group-hover:text-[var(--primary)]"
+                               style={{ color: "var(--on-surface)" }}>
+                                {entry.frontmatter.title}
+                            </p>
                         </Link>
-                    </li>
-                ))}
-            </ul>
-        </div>
+                    );
+                })}
+            </div>
+        </section>
     );
 }

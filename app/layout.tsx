@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import { Syne, DM_Sans, JetBrains_Mono } from "next/font/google"
+import { Syne, DM_Sans, JetBrains_Mono, Cormorant_Garamond } from "next/font/google"
 import Providers from "@/components/Providers"
 import Navigation from "@/components/Navigation"
 import Footer from "@/components/Footer"
@@ -33,6 +33,14 @@ const jetbrainsMono = JetBrains_Mono({
     weight: ["400", "500", "700"],
 })
 
+const cormorantGaramond = Cormorant_Garamond({
+    subsets: ["latin"],
+    display: "swap",
+    variable: "--font-cormorant",
+    weight: ["300", "400", "500"],
+    style: ["normal", "italic"],
+})
+
 // ── Metadata ─────────────────────────────────────────────────────────────────
 // Only works because this file has no 'use client'
 
@@ -48,7 +56,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <html
             lang="en"
             suppressHydrationWarning // required by next-themes to avoid flicker
-            className={`${syne.variable} ${dmSans.variable} ${jetbrainsMono.variable}`}
+            className={`${syne.variable} ${dmSans.variable} ${jetbrainsMono.variable} ${cormorantGaramond.variable}`}
         >
             <head>
                 <link rel="icon" href="/favicon.ico" />
