@@ -59,7 +59,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
             {/* Hero */}
             <div className="dot-grid pt-16 pb-10">
                 <div className="max-w-5xl mx-auto px-6 md:px-8">
-                    <div className="flex items-center gap-2 mb-5">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-5">
                         <Link href="/projects"
                               className="font-mono text-xs tracking-widest transition-colors hover:text-[var(--primary)]"
                               style={{ color: "var(--on-surface-variant)" }}>
@@ -69,7 +69,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
                         <span className="font-mono text-xs tracking-widest" style={{ color: meta.color }}>■ {meta.label}</span>
                     </div>
 
-                    <h1 className="font-display text-4xl sm:text-5xl md:text-6xl font-bold mb-5 break-words leading-tight"
+                    <h1 className="font-display text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-5 break-words leading-tight"
                         style={{ color: "var(--on-surface)" }}>
                         {project.frontmatter.title}
                     </h1>

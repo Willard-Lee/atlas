@@ -46,7 +46,7 @@ export default function GardenShell({
         });
 
     return (
-        <div className="flex-1 min-h-0 relative">
+        <div className="flex-1 min-h-0 relative w-full overflow-x-hidden">
 
             {/* ── Floating sidebar ─────────────────────────────────────── */}
             <AnimatePresence initial={false}>
@@ -261,18 +261,30 @@ export default function GardenShell({
                             key="sheet"
                             className="lg:hidden fixed left-0 right-0 bottom-0 z-50 flex flex-col"
                             style={{
-                                height:     "70vh",
-                                background: "var(--surface-container-low)",
-                                borderTop:  "2px solid var(--primary)",
+                                height:      "72vh",
+                                background:  "var(--surface-container-low)",
+                                borderTop:   "2px solid var(--primary)",
+                                touchAction: "none",
                             }}
                             initial={{ y: "100%" }}
                             animate={{ y: 0 }}
                             exit={{ y: "100%" }}
                             transition={spring}
+                            drag="y"
+                            dragConstraints={{ top: 0, bottom: 0 }}
+                            dragElastic={{ top: 0, bottom: 0.3 }}
+                            onDragEnd={(_, { offset, velocity }) => {
+                                if (offset.y > 80 || velocity.y > 400) setMobileSheetOpen(false);
+                            }}
                         >
+                            {/* Drag handle */}
+                            <div className="flex justify-center pt-3 pb-1 shrink-0 cursor-grab active:cursor-grabbing">
+                                <div style={{ width: 40, height: 4, background: "var(--outline-variant)" }} />
+                            </div>
+
                             {/* Sheet header */}
                             <div
-                                className="flex items-center justify-between px-4 py-3 border-b shrink-0"
+                                className="flex items-center justify-between px-4 py-2.5 border-b shrink-0"
                                 style={{ borderColor: "var(--outline-variant)" }}
                             >
                                 <span
@@ -283,7 +295,7 @@ export default function GardenShell({
                                 </span>
                                 <button
                                     onClick={() => setMobileSheetOpen(false)}
-                                    className="font-mono text-xs px-2 py-1"
+                                    className="font-mono text-xs px-2 py-1 transition-colors hover:border-[var(--primary)] hover:text-[var(--primary)]"
                                     style={{
                                         color:  "var(--on-surface-variant)",
                                         border: "1px solid var(--outline-variant)",
@@ -309,7 +321,7 @@ export default function GardenShell({
             </AnimatePresence>
 
             {/* ── Main content — always full width ─────────────────────── */}
-            <main className="min-h-0">
+            <main className="min-h-0 w-full">
                 {children}
             </main>
         </div>

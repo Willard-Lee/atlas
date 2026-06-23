@@ -41,6 +41,14 @@ export default function QuoteBlock() {
     const [loading,      setLoading]      = useState(false);
     const [btnHovered,   setBtnHovered]   = useState(false);
     const [fallbackIdx,  setFallbackIdx]  = useState(0);
+    const [isMobile,     setIsMobile]     = useState(false);
+
+    useEffect(() => {
+        const check = () => setIsMobile(window.innerWidth < 1024);
+        check();
+        window.addEventListener("resize", check);
+        return () => window.removeEventListener("resize", check);
+    }, []);
 
     useEffect(() => {
         const t = setTimeout(() => setOpen(true), 2500);
@@ -103,7 +111,7 @@ export default function QuoteBlock() {
                         whileTap={{ scale: 0.93 }}
                         aria-label="Open daily quote"
                         className="fixed z-40 font-mono text-xs px-3 py-2 border
-                                   bottom-[116px] lg:bottom-[72px] right-4 lg:right-8
+                                   bottom-[116px] lg:bottom-[72px] left-4 lg:left-auto lg:right-8
                                    flex items-center gap-2 transition-colors"
                         style={{
                             borderColor: btnHovered ? "var(--primary)" : "var(--outline-variant)",
@@ -141,8 +149,8 @@ export default function QuoteBlock() {
                         className="fixed z-30 select-none overflow-hidden"
                         style={{
                             bottom:    88,
-                            right:     24,
-                            width:     "min(440px, calc(100vw - 48px))",
+                            ...(isMobile ? { left: 16 } : { right: 24 }),
+                            width:     "min(440px, calc(100vw - 32px))",
                             border:    "1px solid var(--primary)",
                             boxShadow: "0 0 40px rgba(98,0,170,0.15), 0 0 100px rgba(98,0,170,0.06)",
                             cursor:    "grab",

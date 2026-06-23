@@ -6,8 +6,8 @@ import FontSwitcher from "@/components/FontSwitcher";
 type Heading = { id: string; text: string; level: number };
 
 interface Props {
-    children: React.ReactNode;
-    right: React.ReactNode;
+    children:  React.ReactNode;
+    right:     React.ReactNode;
     headings?: Heading[];
 }
 
@@ -17,10 +17,11 @@ export default function ArticleLayout({ children, right, headings = [] }: Props)
     const [mobile,     setMobile]     = useState(false);
     const [tocHovered, setTocHovered] = useState(false);
     const [activeId,   setActiveId]   = useState("");
+    const [fullscreen, setFullscreen] = useState(false);
 
+    // Always track active heading + scroll % (not just in focus mode)
     useEffect(() => {
         const h2s = headings.filter(h => h.level === 2);
-        if (!focus || h2s.length === 0) { setActiveId(""); return; }
 
         function update() {
             let current = "";
@@ -34,8 +35,9 @@ export default function ArticleLayout({ children, right, headings = [] }: Props)
         window.addEventListener("scroll", update, { passive: true });
         update();
         return () => window.removeEventListener("scroll", update);
-    }, [focus, headings]);
+    }, [headings]);
 
+    // F key for focus mode
     useEffect(() => {
         function onKey(e: KeyboardEvent) {
             const tag = (e.target as HTMLElement)?.tagName ?? "";
@@ -47,23 +49,37 @@ export default function ArticleLayout({ children, right, headings = [] }: Props)
         return () => window.removeEventListener("keydown", onKey);
     }, []);
 
+    // Sync focus-mode class on <html>
     useEffect(() => {
         document.documentElement.classList.toggle("focus-mode", focus);
         return () => document.documentElement.classList.remove("focus-mode");
     }, [focus]);
 
+    // Track browser fullscreen state
+    useEffect(() => {
+        function onChange() { setFullscreen(!!document.fullscreenElement); }
+        document.addEventListener("fullscreenchange", onChange);
+        return () => document.removeEventListener("fullscreenchange", onChange);
+    }, []);
+
+    function toggleFullscreen() {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen();
+        } else {
+            document.exitFullscreen();
+        }
+    }
+
     return (
         <div
+            className="relative px-4 sm:px-10"
             style={{
                 maxWidth:      "56rem",
                 marginLeft:    "auto",
                 marginRight:   "auto",
-                paddingLeft:   "2.5rem",
-                paddingRight:  "2.5rem",
-                paddingBottom: "6rem",
+                paddingBottom: "8rem",
                 paddingTop:    "2.5rem",
             }}
-            className="relative"
         >
             {children}
 
@@ -87,13 +103,9 @@ export default function ArticleLayout({ children, right, headings = [] }: Props)
                 {/* Title bar */}
                 <div
                     className="flex items-center justify-between px-3 py-2.5 border-b shrink-0 select-none"
-                    style={{
-                        borderColor: "var(--outline-variant)",
-                        borderTop:   "2px solid var(--primary)",
-                    }}
+                    style={{ borderColor: "var(--outline-variant)", borderTop: "2px solid var(--primary)" }}
                 >
-                    <span className="font-mono text-xs font-bold tracking-widest"
-                          style={{ color: "var(--primary)" }}>
+                    <span className="font-mono text-xs font-bold tracking-widest" style={{ color: "var(--primary)" }}>
                         [ ARTICLE.INFO ]
                     </span>
                     <button
@@ -119,13 +131,8 @@ export default function ArticleLayout({ children, right, headings = [] }: Props)
                         >
                             <div
                                 className="p-3 space-y-3 overflow-y-auto"
-                                style={{
-                                    maxHeight:      "calc(100vh - 160px)",
-                                    scrollbarWidth: "thin",
-                                    scrollbarColor: "var(--outline-variant) transparent",
-                                }}
+                                style={{ maxHeight: "calc(100vh - 160px)", scrollbarWidth: "thin", scrollbarColor: "var(--outline-variant) transparent" }}
                             >
-                                {/* Focus mode toggle */}
                                 <button
                                     onClick={() => setFocus(v => !v)}
                                     className="w-full font-mono text-xs px-3 py-2.5 border flex items-center gap-2 transition-colors"
@@ -135,13 +142,26 @@ export default function ArticleLayout({ children, right, headings = [] }: Props)
                                         background:  focus ? "rgba(98,0,170,0.06)" : "transparent",
                                     }}
                                 >
-                                    <span style={{ fontSize: "0.85rem", lineHeight: 1, flexShrink: 0 }}>
-                                        {focus ? "◉" : "◎"}
-                                    </span>
+                                    <span style={{ fontSize: "0.85rem", lineHeight: 1, flexShrink: 0 }}>{focus ? "◉" : "◎"}</span>
                                     <span className="tracking-widest truncate">FOCUS.MODE</span>
-                                    <span className="ml-auto font-mono shrink-0"
-                                          style={{ fontSize: "0.6rem", color: focus ? "var(--primary)" : "var(--outline)" }}>
+                                    <span className="ml-auto font-mono shrink-0" style={{ fontSize: "0.6rem", color: focus ? "var(--primary)" : "var(--outline)" }}>
                                         {focus ? "ON" : "OFF"}
+                                    </span>
+                                </button>
+
+                                <button
+                                    onClick={toggleFullscreen}
+                                    className="w-full font-mono text-xs px-3 py-2.5 border flex items-center gap-2 transition-colors"
+                                    style={{
+                                        borderColor: fullscreen ? "var(--primary)" : "var(--outline-variant)",
+                                        color:       fullscreen ? "var(--primary)" : "var(--on-surface-variant)",
+                                        background:  fullscreen ? "rgba(98,0,170,0.06)" : "transparent",
+                                    }}
+                                >
+                                    <span style={{ fontSize: "0.85rem", lineHeight: 1, flexShrink: 0 }}>⛶</span>
+                                    <span className="tracking-widest truncate">FULLSCREEN</span>
+                                    <span className="ml-auto font-mono shrink-0" style={{ fontSize: "0.6rem", color: fullscreen ? "var(--primary)" : "var(--outline)" }}>
+                                        {fullscreen ? "ON" : "OFF"}
                                     </span>
                                 </button>
 
@@ -188,29 +208,41 @@ export default function ArticleLayout({ children, right, headings = [] }: Props)
                             key="sheet"
                             className="lg:hidden fixed left-0 right-0 bottom-0 z-50 flex flex-col"
                             style={{
-                                height:     "70vh",
+                                height:     "72vh",
                                 background: "var(--surface-container-low)",
                                 borderTop:  "2px solid var(--primary)",
+                                touchAction: "none",
                             }}
                             initial={{ y: "100%" }}
                             animate={{ y: 0 }}
                             exit={{ y: "100%" }}
                             transition={{ type: "spring", damping: 26, stiffness: 260 }}
+                            drag="y"
+                            dragConstraints={{ top: 0, bottom: 0 }}
+                            dragElastic={{ top: 0, bottom: 0.3 }}
+                            onDragEnd={(_, { offset, velocity }) => {
+                                if (offset.y > 80 || velocity.y > 400) setMobile(false);
+                            }}
                         >
-                            <div className="flex items-center justify-between px-4 py-3 border-b shrink-0"
+                            {/* Drag handle */}
+                            <div className="flex justify-center pt-3 pb-1 shrink-0 cursor-grab active:cursor-grabbing">
+                                <div style={{ width: 40, height: 4, background: "var(--outline-variant)" }} />
+                            </div>
+
+                            <div className="flex items-center justify-between px-4 py-2.5 border-b shrink-0"
                                  style={{ borderColor: "var(--outline-variant)" }}>
-                                <span className="font-mono text-xs font-bold tracking-widest"
-                                      style={{ color: "var(--primary)" }}>
+                                <span className="font-mono text-xs font-bold tracking-widest" style={{ color: "var(--primary)" }}>
                                     [ ARTICLE.INFO ]
                                 </span>
                                 <button
                                     onClick={() => setMobile(false)}
-                                    className="font-mono text-xs px-2 py-1"
+                                    className="font-mono text-xs px-2 py-1 transition-colors hover:border-[var(--primary)] hover:text-[var(--primary)]"
                                     style={{ color: "var(--on-surface-variant)", border: "1px solid var(--outline-variant)" }}
                                 >
                                     [ × ]
                                 </button>
                             </div>
+
                             <div className="flex-1 overflow-y-auto min-h-0 p-3 space-y-3"
                                  style={{ scrollbarWidth: "thin", scrollbarColor: "var(--outline-variant) transparent" }}>
                                 <button
@@ -225,6 +257,19 @@ export default function ArticleLayout({ children, right, headings = [] }: Props)
                                     <span style={{ fontSize: "0.85rem", lineHeight: 1 }}>{focus ? "◉" : "◎"}</span>
                                     <span className="tracking-widest">FOCUS.MODE</span>
                                     <span className="ml-auto" style={{ fontSize: "0.6rem" }}>{focus ? "ON" : "OFF"}</span>
+                                </button>
+                                <button
+                                    onClick={toggleFullscreen}
+                                    className="w-full font-mono text-xs px-3 py-2.5 border flex items-center gap-2 transition-colors"
+                                    style={{
+                                        borderColor: fullscreen ? "var(--primary)" : "var(--outline-variant)",
+                                        color:       fullscreen ? "var(--primary)" : "var(--on-surface-variant)",
+                                        background:  fullscreen ? "rgba(98,0,170,0.06)" : "transparent",
+                                    }}
+                                >
+                                    <span style={{ fontSize: "0.85rem", lineHeight: 1 }}>⛶</span>
+                                    <span className="tracking-widest">FULLSCREEN</span>
+                                    <span className="ml-auto" style={{ fontSize: "0.6rem" }}>{fullscreen ? "ON" : "OFF"}</span>
                                 </button>
                                 <FontSwitcher />
                                 {right}
@@ -242,7 +287,6 @@ export default function ArticleLayout({ children, right, headings = [] }: Props)
                     onMouseEnter={() => setTocHovered(true)}
                     onMouseLeave={() => setTocHovered(false)}
                 >
-                    {/* Expanded text panel */}
                     <AnimatePresence>
                         {tocHovered && (
                             <motion.div
@@ -302,19 +346,9 @@ export default function ArticleLayout({ children, right, headings = [] }: Props)
                                         background: isActive ? "var(--primary)" : "var(--on-surface-variant)",
                                         scaleY:     isActive ? 1.5 : 1,
                                     }}
-                                    whileHover={{
-                                        width:      isActive ? 44 : 40,
-                                        opacity:    1,
-                                        background: "var(--primary)",
-                                        scaleY:     1.6,
-                                    }}
+                                    whileHover={{ width: isActive ? 44 : 40, opacity: 1, background: "var(--primary)", scaleY: 1.6 }}
                                     transition={{ duration: 0.18 }}
-                                    style={{
-                                        display:    "block",
-                                        height:     3,
-                                        flexShrink: 0,
-                                        cursor:     "pointer",
-                                    }}
+                                    style={{ display: "block", height: 3, flexShrink: 0, cursor: "pointer" }}
                                 />
                             );
                         })}
