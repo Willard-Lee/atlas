@@ -27,7 +27,6 @@ export const CHANGELOG: ChangelogEntry[] = [
                 "Admin Editors tab: resume drafts, view uncommitted content, and one-click commit + push to GitHub.",
                 "MDX embeds — Instagram, X/Twitter, reference LinkCards, and a generic responsive iframe.",
                 "Composer quality-of-life: frontmatter lint, slug-collision check, and live reading-time.",
-                "Nine new resource papers (BERT, seq2seq, GARCH, RL & computational-finance surveys, and more).",
                 "New blog category: sports → FIELD_OPS.",
             ],
             changed: [
@@ -49,9 +48,12 @@ export const CHANGELOG: ChangelogEntry[] = [
         title: "Atlas launch",
         changes: {
             added: [
-                "Initial Atlas: MDX content pipeline with [[wikilink]] graph linking and automatic backlinks.",
-                "Blog, projects, digital garden, and resources sections.",
-                "Retro-terminal design system, LaTeX math, and a dev-only admin panel.",
+                "MDX pipeline: GFM, [[wikilinks]], callouts, syntax highlighting, and LaTeX math.",
+                "Build-time graph linking with automatic backlink panels.",
+                "Four content types (blog, projects, garden, resources) with typed frontmatter schemas.",
+                "Terminal-aesthetic design system (Material You tokens, JetBrains Mono) with dot-grid heroes and Framer Motion.",
+                "Auto-generated Table of Contents sidebar, sticky navbar, and heading anchors.",
+                "Dev-only admin panel with full CRUD, image upload, and localStorage draft autosave.",
             ],
         },
     },
