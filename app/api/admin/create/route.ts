@@ -19,6 +19,12 @@ export async function POST(req: NextRequest) {
 
     if (!type || !slug) return NextResponse.json({ error: "Missing type or slug" }, { status: 400 });
 
+    // Reject path separators / traversal in slug or subject — keeps routes clean
+    // (no encoded "/" in a single URL segment) and blocks directory traversal.
+    const hasUnsafe = (s: string) => /[/\\]/.test(s) || s.split(/[/\\]/).includes("..");
+    if (hasUnsafe(slug) || (type === "garden" && hasUnsafe(String(fields?.subject ?? ""))))
+        return NextResponse.json({ error: "Slug/subject cannot contain '/', '\\' or '..'" }, { status: 400 });
+
     const contentRoot = path.resolve(process.cwd(), "content");
     let filePath: string;
 
@@ -30,7 +36,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Guard against path traversal via crafted slug or subject
-    if (!path.resolve(filePath).startsWith(contentRoot))
+    if (!path.resolve(filePath).startsWith(contentRoot + path.sep))
         return NextResponse.json({ error: "Invalid path" }, { status: 400 });
 
     if (type === "garden") fs.mkdirSync(path.dirname(filePath), { recursive: true });

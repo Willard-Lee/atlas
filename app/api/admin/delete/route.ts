@@ -11,7 +11,7 @@ export async function DELETE(req: NextRequest) {
 
     const abs = path.resolve(process.cwd(), filePath);
     const contentRoot = path.resolve(process.cwd(), "content");
-    if (!abs.startsWith(contentRoot))
+    if (!abs.startsWith(contentRoot + path.sep))
         return NextResponse.json({ error: "Invalid path" }, { status: 400 });
 
     if (!fs.existsSync(abs))

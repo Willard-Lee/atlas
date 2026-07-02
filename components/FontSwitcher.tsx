@@ -22,6 +22,7 @@ export default function FontSwitcher() {
             document.documentElement.style.setProperty("--reader-font",        match.family);
             document.documentElement.style.setProperty("--reader-font-scale",  match.scale ?? "1");
             document.documentElement.style.setProperty("--reader-font-weight", String(match.weight));
+            document.documentElement.dataset.readerFont = match.id;
         }
     }, []);
 
@@ -31,6 +32,7 @@ export default function FontSwitcher() {
         document.documentElement.style.setProperty("--reader-font",        f.family);
         document.documentElement.style.setProperty("--reader-font-scale",  f.scale ?? "1");
         document.documentElement.style.setProperty("--reader-font-weight", String(f.weight));
+        document.documentElement.dataset.readerFont = f.id;
     }
 
     return (

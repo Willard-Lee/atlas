@@ -23,6 +23,20 @@ const processor = unified()
     .use(rehypeSlug as AnyPlugin)
     .use(rehypeKatex as AnyPlugin);
 
+// The live preview uses a plain remark→rehype pipeline (not MDX), so custom
+// embed components (<Instagram>, <Tweet>, …) can't be mounted here. Swap them
+// for a labeled placeholder so authors see where the embed will land; the real
+// component renders on the published page.
+const EMBED_TAGS = ["Instagram", "Tweet", "LinkCard", "Embed"];
+function stubEmbeds(src: string): string {
+    const names = EMBED_TAGS.join("|");
+    // Match both self-closing (<Tag ... />) and paired (<Tag ...>...</Tag>) forms.
+    const re = new RegExp(`<(${names})\\b[^>]*?(?:/>|>[\\s\\S]*?</\\1>)`, "g");
+    return src.replace(re, (_m, name) =>
+        `<div class="embed-placeholder">[ ${String(name).toUpperCase()} EMBED ] — renders on the published page</div>`
+    );
+}
+
 export async function POST(req: NextRequest) {
     if (process.env.NODE_ENV !== "development")
         return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -31,7 +45,7 @@ export async function POST(req: NextRequest) {
     if (!body?.trim()) return NextResponse.json({ html: "" });
 
     try {
-        const mdast = processor.parse(body);
+        const mdast = processor.parse(stubEmbeds(body));
         const hast  = await processor.run(mdast) as Root;
         const html  = toHtml(hast, { allowDangerousHtml: true });
         return NextResponse.json({ html });

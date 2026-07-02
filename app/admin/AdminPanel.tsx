@@ -5,12 +5,20 @@ import {
     TbH2, TbH3, TbBold, TbItalic, TbCode, TbFileCode,
     TbInfoCircle, TbBulb, TbAlertTriangle,
     TbMath, TbMathFunction, TbPhoto, TbTable, TbLink, TbBrackets,
+    TbBrandInstagram, TbBrandX, TbExternalLink, TbGitCommit, TbCloudUpload, TbPencil,
 } from "react-icons/tb";
+import { CATEGORIES } from "@/lib/categories";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 type ContentType = "blog" | "project" | "garden" | "resource";
-type PanelView   = "compose" | "library";
+type PanelView   = "compose" | "library" | "editors";
+
+interface GitFile { status: string; path: string; }
+interface GitStatus {
+    branch: string; upstream: string | null;
+    ahead: number; behind: number; files: GitFile[];
+}
 
 interface FormState {
     type: ContentType;
@@ -32,6 +40,13 @@ interface ImageItem { name: string; path: string; }
 
 const today       = () => new Date().toISOString().slice(0, 10);
 const toSlug      = (t: string) => t.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+
+// True only for a real calendar date in YYYY-MM-DD form (rejects e.g. 2026-13-02).
+function isValidDate(s: string): boolean {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
+    const d = new Date(`${s}T00:00:00`);
+    return !isNaN(d.getTime()) && d.toISOString().slice(0, 10) === s;
+}
 const STORAGE_KEY = "atlas-admin-draft";
 
 const META_MIN    = 200;
@@ -95,6 +110,11 @@ const SNIPPET_GROUPS: (Snippet | null)[] = [
     // ── Media / structure
     { label: "fig",  title: "Figure",       text: '\n<figure>\n  <img src="/images/" alt="" />\n  <figcaption>Caption</figcaption>\n</figure>\n', select: [25, 33], icon: <TbPhoto size={14} /> },
     { label: "tbl",  title: "GFM table",    text: "\n| Col A | Col B |\n|-------|-------|\n| cell  | cell  |\n\n",                                select: [3, 8],   icon: <TbTable size={14} /> },
+    null,
+    // ── Embeds
+    { label: "ig",   title: "Instagram embed",  text: '\n<Instagram url="" />\n',                    select: [17, 17], icon: <TbBrandInstagram size={14} />, accent: "#e1306c" },
+    { label: "x",    title: "X / Tweet embed",  text: '\n<Tweet id="" />\n',                         select: [12, 12], icon: <TbBrandX size={13} /> },
+    { label: "ref",  title: "Reference card",   text: '\n<LinkCard href="" title="" source="" />\n', select: [17, 17], icon: <TbExternalLink size={14} /> },
     null,
     // ── Links
     { label: "[[]]", title: "Wikilink",              text: "[[slug]]",                                   select: [2, 6],   icon: <TbBrackets size={14} /> },
@@ -256,7 +276,9 @@ function StatusBar({ msg, savedAt, onClear, showClear, wordCount, liveUrl }: {
             </div>
             <div className="flex items-center gap-4 shrink-0">
                 {wordCount > 0 && (
-                    <span style={{ color: "var(--outline)" }}>{wordCount}w</span>
+                    <span style={{ color: "var(--outline)" }}>
+                        {wordCount}w · ~{Math.max(1, Math.round(wordCount / 200))}m read
+                    </span>
                 )}
                 {showClear && (
                     <button onClick={onClear} className="transition-colors hover:text-[var(--error)]" style={{ color: "var(--outline)" }}>
@@ -287,6 +309,13 @@ export default function AdminPanel() {
     const [isDirty, setIsDirty]         = useState(false);
     const [optionalOpen, setOptionalOpen] = useState(true);
 
+    // Editors tab — git status + publish
+    const [gitStatus, setGitStatus]     = useState<GitStatus | null>(null);
+    const [gitLoading, setGitLoading]   = useState(false);
+    const [gitError, setGitError]       = useState<string | null>(null);
+    const [commitMsg, setCommitMsg]     = useState("");
+    const [publishing, setPublishing]   = useState(false);
+
     // Image gallery
     const [images, setImages]           = useState<ImageItem[]>([]);
     const [imagesLoading, setImagesLoading] = useState(false);
@@ -312,6 +341,14 @@ export default function AdminPanel() {
 
     const set = <K extends keyof FormState>(k: K, v: FormState[K]) =>
         setForm((p) => ({ ...p, [k]: v }));
+
+    // Append a category tag to the comma-separated tags field (no duplicates).
+    const addTag = (tag: string) =>
+        setForm((p) => {
+            const list = p.tags.split(",").map((t) => t.trim()).filter(Boolean);
+            if (list.includes(tag)) return p;
+            return { ...p, tags: [...list, tag].join(", ") };
+        });
 
     const wordCount = body.split(/\s+/).filter(Boolean).length;
 
@@ -453,6 +490,56 @@ export default function AdminPanel() {
 
     useEffect(() => { if (view === "library") loadLibrary(); }, [view, loadLibrary]);
 
+    // Load the library once on mount so the composer can flag slug collisions.
+    useEffect(() => { loadLibrary(); }, [loadLibrary]);
+
+    // ── Editors: git status + publish ──────────────────────────────────────────
+
+    const loadGitStatus = useCallback(async () => {
+        setGitLoading(true);
+        setGitError(null);
+        try {
+            const res  = await fetch("/api/admin/publish");
+            const data = await res.json();
+            if (!res.ok) { setGitError(data.error ?? "Failed to read git status."); setGitStatus(null); }
+            else setGitStatus(data as GitStatus);
+        } catch {
+            setGitError("Network error.");
+            setGitStatus(null);
+        }
+        setGitLoading(false);
+    }, []);
+
+    // Editors view needs both the draft list (library) and the git status.
+    useEffect(() => {
+        if (view === "editors") { loadLibrary(); loadGitStatus(); }
+    }, [view, loadLibrary, loadGitStatus]);
+
+    async function handlePublish() {
+        const message = commitMsg.trim();
+        if (!message) { setStatus({ ok: false, msg: "Commit message is required." }); return; }
+        setPublishing(true);
+        setStatus(null);
+        try {
+            const res  = await fetch("/api/admin/publish", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ message }),
+            });
+            const data = await res.json();
+            if (!res.ok) { setStatus({ ok: false, msg: data.error ?? "Publish failed." }); }
+            else if (!data.committed) { setStatus({ ok: true, msg: data.message ?? "Nothing to commit." }); }
+            else {
+                setStatus({ ok: true, msg: `✓ Pushed ${data.commit} (${data.files?.length ?? 0} file${data.files?.length === 1 ? "" : "s"}) → origin/${data.branch}` });
+                setCommitMsg("");
+            }
+            await loadGitStatus();
+        } catch {
+            setStatus({ ok: false, msg: "Network error." });
+        }
+        setPublishing(false);
+    }
+
     async function handleEdit(item: LibraryItem) {
         setStatus(null); setLiveUrl(null);
         const res = await fetch(`/api/admin/read?path=${encodeURIComponent(item.filePath)}`);
@@ -542,6 +629,9 @@ export default function AdminPanel() {
 
     async function handleSave() {
         if (!form.title || !form.slug)         { setStatus({ ok: false, msg: "Title and slug are required." }); return; }
+        if (!editingFile && library.some((i) => i.type === form.type && i.slug === form.slug.trim())) {
+            setStatus({ ok: false, msg: `Slug "${form.slug.trim()}" already exists for ${form.type}.` }); return;
+        }
         if (form.type === "garden" && !form.subject)  { setStatus({ ok: false, msg: "Subject is required." }); return; }
         if (form.type === "resource" && !form.authors){ setStatus({ ok: false, msg: "Authors are required." }); return; }
         setStatus(null);
@@ -619,6 +709,46 @@ export default function AdminPanel() {
         })
         .sort((a, b) => b.frontmatter.date.localeCompare(a.frontmatter.date));
 
+    const draftItems = library
+        .filter((i) => i.frontmatter.draft)
+        .sort((a, b) => b.frontmatter.date.localeCompare(a.frontmatter.date));
+
+    // Slug collision — only meaningful for new files (editing locks the slug).
+    const slugTrimmed   = form.slug.trim();
+    const slugCollision = !editingFile && slugTrimmed.length > 0 &&
+        library.some((i) => i.type === form.type && i.slug === slugTrimmed);
+
+    // ── Frontmatter lint — warn-only, never blocks a save ──────────────────────
+    const lintWarnings: { level: "warn" | "info"; msg: string }[] = (() => {
+        const out: { level: "warn" | "info"; msg: string }[] = [];
+        const catKeys = Object.keys(CATEGORIES);
+        const tagList = form.tags.split(",").map((t) => t.trim().toLowerCase()).filter(Boolean);
+
+        if (form.date && !isValidDate(form.date))
+            out.push({ level: "warn", msg: `date "${form.date}" isn't a valid YYYY-MM-DD` });
+
+        if ((form.type === "blog" || form.type === "project" || form.type === "resource") && !form.summary.trim())
+            out.push({ level: "warn", msg: "no summary — used in cards, previews & SEO" });
+
+        if (form.type === "blog") {
+            if (tagList.length === 0)
+                out.push({ level: "warn", msg: "no tags — add a category to file this post" });
+            else if (!tagList.some((t) => catKeys.includes(t)))
+                out.push({ level: "warn", msg: `no category tag (${catKeys.join(", ")}) — renders uncategorized` });
+        }
+
+        if (form.type === "resource" && form.year.trim() && !/^\d{4}$/.test(form.year.trim()))
+            out.push({ level: "warn", msg: `year "${form.year}" should be a 4-digit number` });
+
+        if (!editingFile && slugTrimmed && form.title.trim() && slugTrimmed !== toSlug(form.title))
+            out.push({ level: "warn", msg: "slug differs from the title-derived slug" });
+
+        if (form.draft)
+            out.push({ level: "info", msg: "draft — hidden in production until unchecked" });
+
+        return out;
+    })();
+
     const TAB_TYPES: ContentType[] = ["blog", "project", "garden", "resource"];
 
     // Compose tab label reflects editing/dirty state
@@ -639,17 +769,30 @@ export default function AdminPanel() {
                         <span className="text-sm font-bold tracking-widest" style={{ color: "var(--on-surface)" }}>ADMIN.SYS</span>
                     </div>
                     <div className="flex border" style={{ borderColor: "var(--outline-variant)" }}>
-                        {(["compose", "library"] as PanelView[]).map((v, i) => (
-                            <button key={v} onClick={() => setView(v)}
-                                className="px-4 py-1 text-xs tracking-widest transition-colors"
-                                style={{
-                                    background: view === v ? "var(--surface-container-high)" : "transparent",
-                                    color:      view === v ? "var(--primary)" : "var(--on-surface-variant)",
-                                    borderRight: i === 0 ? "1px solid var(--outline-variant)" : undefined,
-                                }}>
-                                {v === "compose" ? composeLabel : "LIBRARY"}
-                            </button>
-                        ))}
+                        {(["compose", "library", "editors"] as PanelView[]).map((v, i) => {
+                            const active = view === v;
+                            const label  = v === "compose" ? composeLabel : v === "library" ? "LIBRARY" : "EDITORS";
+                            const badge  = v === "editors" && gitStatus && gitStatus.files.length > 0
+                                ? gitStatus.files.length : null;
+                            return (
+                                <button key={v} onClick={() => setView(v)}
+                                    className="relative px-4 py-1 text-xs tracking-widest transition-colors"
+                                    style={{
+                                        background: active ? "var(--surface-container-high)" : "transparent",
+                                        color:      active ? "var(--primary)" : "var(--on-surface-variant)",
+                                        borderRight: i < 2 ? "1px solid var(--outline-variant)" : undefined,
+                                        borderTop:  active ? "2px solid var(--primary)" : "2px solid transparent",
+                                    }}>
+                                    {label}
+                                    {badge !== null && (
+                                        <span className="ml-1.5 px-1 align-middle" style={{
+                                            fontSize: 9, background: "var(--secondary-container)",
+                                            color: "var(--on-secondary-container, var(--background))",
+                                        }}>{badge}</span>
+                                    )}
+                                </button>
+                            );
+                        })}
                     </div>
                     {isDirty && (
                         <span className="text-xs" style={{ color: "var(--outline)" }}>
@@ -708,6 +851,11 @@ export default function AdminPanel() {
                             <div>
                                 <SideLabel>{editingFile ? "SLUG (locked)" : "SLUG"}</SideLabel>
                                 <FieldInput value={form.slug} onChange={(v) => set("slug", v)} placeholder="post-slug" readOnly={!!editingFile} tabIndex={editingFile ? -1 : undefined} />
+                                {slugCollision && (
+                                    <div className="text-xs mt-1" style={{ color: "var(--error)" }}>
+                                        ⚠ slug already exists for {form.type}
+                                    </div>
+                                )}
                             </div>
                             <div><SideLabel>DATE</SideLabel><FieldInput value={form.date} onChange={(v) => set("date", v)} /></div>
 
@@ -742,7 +890,28 @@ export default function AdminPanel() {
                                         className="space-y-3"
                                     >
                                         <div><SideLabel>SUMMARY</SideLabel><FieldInput value={form.summary} onChange={(v) => set("summary", v)} placeholder="One-liner" /></div>
-                                        <div><SideLabel>TAGS</SideLabel><FieldInput value={form.tags} onChange={(v) => set("tags", v)} placeholder="ml, engineering" /></div>
+                                        <div>
+                                            <SideLabel>TAGS</SideLabel>
+                                            <FieldInput value={form.tags} onChange={(v) => set("tags", v)} placeholder="ml, engineering" />
+                                            {form.type === "blog" && (
+                                                <div className="flex flex-wrap gap-1 mt-1.5">
+                                                    {Object.entries(CATEGORIES).map(([key, c]) => {
+                                                        const on = form.tags.split(",").map((t) => t.trim()).includes(key);
+                                                        return (
+                                                            <button key={key} type="button" onClick={() => addTag(key)} title={`Add category: ${c.label}`}
+                                                                className="px-1.5 py-0.5 border transition-colors"
+                                                                style={{
+                                                                    fontSize: 9, letterSpacing: "0.05em",
+                                                                    borderColor: on ? c.color : "var(--outline-variant)",
+                                                                    color:       on ? c.color : "var(--outline)",
+                                                                }}>
+                                                                {c.symbol} {c.label}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
+                                        </div>
 
                                         {(form.type === "blog" || form.type === "project") && (
                                             <div><SideLabel>COVER</SideLabel><FieldInput value={form.cover} onChange={(v) => set("cover", v)} placeholder="/covers/img.jpg" /></div>
@@ -834,6 +1003,23 @@ export default function AdminPanel() {
                                     </motion.div>
                                 )}
                             </AnimatePresence>
+                            {/* Frontmatter lint — warn-only */}
+                            {lintWarnings.length > 0 && (
+                                <div className="border" style={{ borderColor: "var(--outline-variant)" }}>
+                                    <div className="px-2 py-1 text-xs tracking-widest border-b"
+                                        style={{ borderColor: "var(--outline-variant)", color: "var(--outline)", background: "var(--surface-container)" }}>
+                                        LINT · {lintWarnings.length}
+                                    </div>
+                                    <div className="px-2 py-1.5 space-y-1">
+                                        {lintWarnings.map((w, i) => (
+                                            <div key={i} className="text-xs leading-snug"
+                                                style={{ color: w.level === "warn" ? "var(--error)" : "var(--outline)" }}>
+                                                {w.level === "warn" ? "⚠" : "ℹ"} {w.msg}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         {/* Action buttons */}
@@ -1074,6 +1260,137 @@ export default function AdminPanel() {
                                 </div>
                             </div>
                         ))}
+                    </div>
+
+                    <StatusBar msg={status} savedAt={null} onClear={() => setStatus(null)} showClear={!!status} wordCount={0} liveUrl={null} />
+                </div>
+            )}
+
+            {/* ════════════════════════════════════════════════════════════════
+                EDITORS — resume drafts · unuploaded content · push to GitHub
+            ════════════════════════════════════════════════════════════════ */}
+            {view === "editors" && (
+                <div className="flex-1 flex flex-col min-h-0">
+                    <div className="flex items-center gap-2 px-4 py-2 border-b shrink-0"
+                        style={{ borderColor: "var(--outline-variant)", background: "var(--surface-container)" }}>
+                        <span className="text-xs tracking-widest" style={{ color: "var(--on-surface-variant)" }}>[ EDITORS ]</span>
+                        {gitStatus && (
+                            <span className="text-xs" style={{ color: "var(--outline)" }}>
+                                branch <span style={{ color: "var(--on-surface-variant)" }}>{gitStatus.branch}</span>
+                                {gitStatus.upstream
+                                    ? <> · ahead {gitStatus.ahead} · behind {gitStatus.behind}</>
+                                    : <> · <span style={{ color: "var(--error)" }}>no upstream</span></>}
+                            </span>
+                        )}
+                        <div className="flex-1" />
+                        <button onClick={() => { loadLibrary(); loadGitStatus(); }}
+                            className="text-xs px-3 py-1 border transition-colors hover:border-[var(--primary)] hover:text-[var(--primary)]"
+                            style={{ borderColor: "var(--outline-variant)", color: "var(--outline)" }}>
+                            ↻ REFRESH
+                        </button>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto">
+                        {/* Resume autosaved working draft */}
+                        {savedAt && (form.title || body) && (
+                            <div className="px-4 py-3 border-b" style={{ borderColor: "var(--outline-variant)" }}>
+                                <div className="text-xs tracking-widest mb-2" style={{ color: "var(--outline)" }}>RESUME.BUFFER</div>
+                                <div className="flex items-center gap-3">
+                                    <TbPencil size={15} style={{ color: "var(--primary)" }} />
+                                    <div className="flex-1 min-w-0">
+                                        <div className="text-xs truncate" style={{ color: "var(--on-surface)" }}>
+                                            {form.title || "(untitled draft)"}
+                                        </div>
+                                        <div className="text-xs" style={{ color: "var(--outline)" }}>
+                                            autosaved {savedAt} · {wordCount}w{editingFile ? ` · editing ${editingFile}` : ""}
+                                        </div>
+                                    </div>
+                                    <button onClick={() => { setView("compose"); requestAnimationFrame(() => textareaRef.current?.focus()); }}
+                                        className="text-xs px-3 py-1 border transition-colors hover:border-[var(--primary)] hover:text-[var(--primary)]"
+                                        style={{ borderColor: "var(--outline-variant)", color: "var(--on-surface-variant)" }}>
+                                        CONTINUE →
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Draft files (draft:true frontmatter) */}
+                        <div className="px-4 py-3 border-b" style={{ borderColor: "var(--outline-variant)" }}>
+                            <div className="text-xs tracking-widest mb-2" style={{ color: "var(--outline)" }}>
+                                DRAFTS · {draftItems.length}
+                            </div>
+                            {libLoading && <p className="text-xs" style={{ color: "var(--outline)" }}>LOADING…</p>}
+                            {!libLoading && draftItems.length === 0 && (
+                                <p className="text-xs" style={{ color: "var(--outline)" }}>No draft files. Everything is published.</p>
+                            )}
+                            <div className="space-y-1">
+                                {draftItems.map((item) => (
+                                    <div key={item.filePath} className="flex items-center gap-3 py-1.5 group">
+                                        <span className="text-xs shrink-0 w-14" style={{ color: TYPE_COLOR[item.type] ?? "var(--outline)" }}>
+                                            {item.type.toUpperCase()}
+                                        </span>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="text-xs truncate" style={{ color: "var(--on-surface)" }}>{item.frontmatter.title}</div>
+                                            <div className="text-xs" style={{ color: "var(--outline)" }}>{item.frontmatter.date}</div>
+                                        </div>
+                                        <button onClick={() => handleEdit(item)}
+                                            className="text-xs px-3 py-1 border shrink-0 opacity-40 group-hover:opacity-100 transition-all hover:border-[var(--primary)] hover:text-[var(--primary)]"
+                                            style={{ borderColor: "var(--outline-variant)", color: "var(--on-surface-variant)" }}>
+                                            CONTINUE →
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Unuploaded content (git working-tree changes) */}
+                        <div className="px-4 py-3">
+                            <div className="text-xs tracking-widest mb-2" style={{ color: "var(--outline)" }}>
+                                UNUPLOADED · {gitStatus?.files.length ?? 0}
+                            </div>
+                            {gitLoading && <p className="text-xs" style={{ color: "var(--outline)" }}>READING GIT…</p>}
+                            {gitError && (
+                                <pre className="text-xs whitespace-pre-wrap" style={{ color: "var(--error)" }}>{gitError}</pre>
+                            )}
+                            {!gitLoading && !gitError && (gitStatus?.files.length ?? 0) === 0 && (
+                                <p className="text-xs" style={{ color: "var(--outline)" }}>Working tree clean — nothing to push.</p>
+                            )}
+                            <div className="space-y-0.5">
+                                {gitStatus?.files.map((f) => (
+                                    <div key={f.path} className="flex items-center gap-3 py-0.5">
+                                        <span className="text-xs shrink-0 w-8 text-center" style={{
+                                            color: f.status.includes("?") ? "var(--secondary-container)"
+                                                 : f.status.includes("D") ? "var(--error)" : "var(--primary)",
+                                        }}>{f.status || "M"}</span>
+                                        <span className="text-xs truncate" style={{ color: "var(--on-surface-variant)" }}>{f.path}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Commit + push bar */}
+                    <div className="border-t shrink-0 px-4 py-3 flex items-center gap-2"
+                        style={{ borderColor: "var(--outline-variant)", background: "var(--surface-container-low)" }}>
+                        <TbGitCommit size={16} style={{ color: "var(--outline)" }} />
+                        <input
+                            value={commitMsg}
+                            onChange={(e) => setCommitMsg(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === "Enter" && !publishing) handlePublish(); }}
+                            placeholder="commit message…"
+                            autoComplete="off"
+                            className="flex-1 px-3 py-1.5 text-xs bg-transparent border outline-none focus:border-[var(--primary)] transition-colors font-mono"
+                            style={{ borderColor: "var(--outline-variant)", color: "var(--on-surface)" }}
+                        />
+                        <button
+                            onClick={handlePublish}
+                            disabled={publishing || !commitMsg.trim()}
+                            className="text-xs px-4 py-1.5 border tracking-widest font-bold transition-colors disabled:opacity-40 disabled:cursor-not-allowed hover:enabled:bg-[var(--primary)] hover:enabled:text-[var(--on-primary)]"
+                            style={{ borderColor: "var(--primary)", color: "var(--primary)" }}>
+                            {publishing
+                                ? <span className="inline-flex items-center gap-2"><TbCloudUpload size={14} className="animate-pulse" /> PUSHING…</span>
+                                : <span className="inline-flex items-center gap-2"><TbCloudUpload size={14} /> PUSH TO GITHUB</span>}
+                        </button>
                     </div>
 
                     <StatusBar msg={status} savedAt={null} onClear={() => setStatus(null)} showClear={!!status} wordCount={0} liveUrl={null} />

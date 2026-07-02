@@ -6,6 +6,13 @@ import rehypeAutolinkHeadings from "rehype-autolink-headings";
 import rehypeKatex from "rehype-katex";
 import rehypePrettyCode from "rehype-pretty-code";
 import { remarkWikiLink } from "./graph";
+import Instagram from "@/components/embeds/Instagram";
+import Tweet from "@/components/embeds/Tweet";
+import LinkCard from "@/components/embeds/LinkCard";
+import Embed from "@/components/embeds/Embed";
+
+// MDX components available to author inside any post body.
+const mdxComponents = { Instagram, Tweet, LinkCard, Embed };
 
 const calloutTypes: Record<string, string> = {
     note: "NOTE", warning: "WARNING", tip: "TIP",
@@ -61,6 +68,7 @@ function rehypeCallouts() {
 export async function renderMDX(source: string){
     const { content } = await compileMDX({
         source,
+        components: mdxComponents,
         options: {
             mdxOptions: {
                 remarkPlugins: [remarkGfm, remarkMath, remarkWikiLink],

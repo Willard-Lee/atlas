@@ -258,13 +258,36 @@ body {
 .prose h4,
 .prose h5,
 .prose h6 {
-  font-family: var(--font-display);
+  /* Follow the reader's chosen font (SANS/SERIF/MONO), falling back to the
+     display face. Keeps headings visually in sync with the body. */
+  font-family: var(--reader-font, var(--font-display));
   font-weight: 700;
   line-height: 1.25;
   margin-top: 3rem;
   margin-bottom: 1rem;
   color: var(--on-surface);
   scroll-margin-top: 5rem;
+}
+
+/* Autolinked headings (rehype-autolink-headings, behavior:"wrap") wrap the
+   heading text in an <a>. Neutralize the generic .prose a styling so heading
+   text keeps its own color/font and doesn't read as a body link. */
+.prose :is(h1, h2, h3, h4, h5, h6) a {
+  color: inherit;
+  font-family: inherit;
+  font-weight: inherit;
+  text-decoration: none;
+}
+.prose :is(h1, h2, h3, h4, h5, h6) a:hover {
+  color: inherit;
+}
+/* Subtle "#" anchor affordance on hover */
+.prose :is(h1, h2, h3, h4, h5, h6):hover a::after {
+  content: " #";
+  color: var(--primary);
+  opacity: 0.5;
+  font-family: var(--font-mono);
+  font-size: 0.7em;
 }
 
 /* H1 in prose body — major break */
@@ -308,10 +331,35 @@ body {
 .prose h5,
 .prose h6 {
   font-size: 0.875rem;
-  font-family: var(--font-mono);
+  /* Inherit the reader-font from the shared heading rule above rather than
+     forcing mono, so H4–H6 also track the chosen font. Uppercase treatment
+     stays as the distinguishing label style. */
   color: var(--on-surface-variant);
   text-transform: uppercase;
   letter-spacing: 0.08em;
+}
+
+/* Serif reader font is thin on light backgrounds — bump its weight in light
+   mode only (dark keeps the lighter weight). Scoped by the data-reader-font
+   attribute FontSwitcher sets on <html>. */
+html.light[data-reader-font="serif"] .prose {
+  font-weight: 500;
+}
+html.light[data-reader-font="serif"] .prose :is(h1, h2, h3, h4, h5, h6) {
+  font-weight: 600;
+}
+
+/* Admin-preview placeholder for embeds (real component renders on the page) */
+.prose .embed-placeholder {
+  margin: 2rem 0;
+  padding: 1.25rem 1rem;
+  border: 1px dashed var(--outline-variant);
+  background: var(--surface-container);
+  color: var(--on-surface-variant);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-align: center;
 }
 
 /* Links */
