@@ -59,7 +59,9 @@ export default function GardenShell({
                         transition={spring}
                         style={{
                             position:    "fixed",
-                            display:     "flex",
+                            // `display` intentionally omitted — the `hidden lg:flex`
+                            // className controls it (inline display would override
+                            // `hidden` and leak the tree onto mobile).
                             flexDirection: "column",
                             left:        0,
                             top:         NAV,

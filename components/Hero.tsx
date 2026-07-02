@@ -87,7 +87,7 @@ function RoleCycler() {
 
 const IDENTITY: [string, string][] = [
     ["OPERATOR", "willard_lee"],
-    ["NODE",     "atlas.v2"],
+    ["NODE",     "atlas.v1"],
     ["ARCH",     "finance × ml"],
     ["LOC",      "PHL"],
 ];
@@ -110,7 +110,7 @@ const STATS = [
     { key: "LOC",    val: "PHL / MYS",     color: "var(--on-surface-variant)" },
     { key: "ARCH",   val: "finance × ml",  color: "var(--on-surface-variant)" },
     { key: "STATUS", val: "● BUILDING",    color: "#4ade80" },
-    { key: "VER",    val: "v2.4.1",        color: "var(--primary)" },
+    { key: "VER",    val: "v1.1.0",        color: "var(--primary)" },
 ] as const;
 
 const PANEL_SHADOW       = "0 0 18px rgba(98,0,170,0.10), 0 0 60px rgba(98,0,170,0.04), inset 0 0 24px rgba(98,0,170,0.03)";
@@ -152,7 +152,7 @@ export default function Hero() {
                             ■
                         </span>
                         <span className="font-mono text-xs tracking-widest" style={{ color: "var(--on-surface-variant)" }}>
-                            ATLAS.SYS // v2.4.1 // signal acquired
+                            ATLAS.SYS // v1.1.0 // signal acquired
                         </span>
                     </motion.div>
 
