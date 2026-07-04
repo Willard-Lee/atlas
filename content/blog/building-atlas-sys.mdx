@@ -392,6 +392,10 @@ The `[LIBRARY]` tab lists all content from all types with filter tabs (ALL / blo
 
 Clicking `EDIT` loads the file via `/api/admin/read`, populates the compose form, and locks the slug field (the file path is fixed — only the content can change).
 
+### Focus writing mode
+
+`⌘/Ctrl+Shift+F` (or the `⛶ FOCUS` button) drops the composer into a full-screen, distraction-free surface — no nav, no panels, just a centered column. The body is a **CodeMirror live-preview editor**: markdown renders as you type (headings enlarge and hide their `##`, code fences become blocks, bold/italic/inline-code style inline) while the document stays plain markdown underneath, so it round-trips losslessly. A `＋ INSERT` menu covers tables, callouts, code, math, and embeds; images can be pasted or dragged straight in. Metadata stays one keystroke away in the collapsible `DETAILS` drawer, and the editor grows Medium-style so what you're writing is always in view.
+
 ---
 
 ## What v1 ships with
@@ -406,13 +410,16 @@ Clicking `EDIT` loads the file via `/api/admin/read`, populates the compose form
 - [x] Table of Contents sidebar (auto-generated from headings)
 - [x] Dev-only admin panel with full CRUD + image upload
 - [x] localStorage draft autosave in admin
+- [x] Full-screen focus writing mode with a live-preview markdown editor (CodeMirror)
+- [x] `＋ INSERT` menu + paste / drag-and-drop image upload
+- [x] MDX embeds — Instagram, X, reference cards, and a generic iframe
+- [x] Admin Editors tab with one-click commit + push to GitHub
 - [x] VS Code snippets for all four frontmatter types
 - [x] Medium redirect support (`external_url` on blog posts)
 - [x] Captioned images (`<figure>` + `<figcaption>`)
+- [x] Excalidraw diagram embed (frontmatter-driven, rendered on project pages)
 - [ ] Full-text search (planned v2)
 - [ ] RSS / Atom feed (planned v2)
-- [ ] Light theme toggle (planned v2)
-- [ ] Excalidraw diagram embed (wired in frontmatter, renderer pending)
 
 ---
 

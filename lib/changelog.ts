@@ -19,6 +19,22 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
     {
+        version: "1.2.0",
+        date: "2026-07-05",
+        title: "Writing experience overhaul",
+        changes: {
+            added: [
+                "Distraction-free full-screen focus writing mode (⌘/Ctrl+Shift+F).",
+                "Live-preview markdown editor (CodeMirror) in focus mode — headings, code blocks, and bold/italic/inline-code render as you type while staying editable.",
+                "＋ INSERT menu plus paste and drag-and-drop image upload in the writing surface.",
+            ],
+            changed: [
+                "Reworked the admin Compose UX: the Title moves to the top of the editor and metadata collapses into a DETAILS drawer, so writing is primary.",
+                "The focus editor grows Medium-style — the page scrolls and long lines always wrap into view.",
+            ],
+        },
+    },
+    {
         version: "1.1.0",
         date: "2026-07-02",
         title: "Authoring, embeds & reading experience",

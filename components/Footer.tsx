@@ -76,7 +76,7 @@ export default function Footer() {
                 PERPETUAL_BUILD — this site is always under construction. design and content iterate continuously.
                 <span aria-hidden style={{ color: "var(--outline-variant)" }}>·</span>
                 <Link href="/changelog" className="tracking-widest transition-colors hover:text-[var(--primary)]">
-                    v1.1.0 · CHANGELOG →
+                    v1.2.0 · CHANGELOG →
                 </Link>
             </div>
 

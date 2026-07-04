@@ -8,6 +8,8 @@ import {
     TbBrandInstagram, TbBrandX, TbExternalLink, TbGitCommit, TbCloudUpload, TbPencil,
 } from "react-icons/tb";
 import { CATEGORIES } from "@/lib/categories";
+import FontSwitcher from "@/components/FontSwitcher";
+import LiveMarkdownEditor, { type LiveEditorHandle } from "@/components/admin/LiveMarkdownEditor";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -48,6 +50,7 @@ function isValidDate(s: string): boolean {
     return !isNaN(d.getTime()) && d.toISOString().slice(0, 10) === s;
 }
 const STORAGE_KEY = "atlas-admin-draft";
+const UI_KEY      = "atlas-admin-ui";
 
 const META_MIN    = 200;
 const META_MAX    = 460;
@@ -309,6 +312,12 @@ export default function AdminPanel() {
     const [isDirty, setIsDirty]         = useState(false);
     const [optionalOpen, setOptionalOpen] = useState(true);
 
+    // Writing UX — full-screen focus mode + collapsible metadata drawer
+    const [focusMode, setFocusMode]     = useState(false);
+    const [detailsOpen, setDetailsOpen] = useState(true);
+    const [insertOpen, setInsertOpen]   = useState(false); // focus-mode ＋ INSERT menu
+    const [resetKey, setResetKey]       = useState(0);     // remounts the live editor on external body resets
+
     // Editors tab — git status + publish
     const [gitStatus, setGitStatus]     = useState<GitStatus | null>(null);
     const [gitLoading, setGitLoading]   = useState(false);
@@ -332,7 +341,10 @@ export default function AdminPanel() {
     const [previewWidth, setPreviewWidth] = useState(PREV_DEFAULT);
 
     const fileRef         = useRef<HTMLInputElement>(null);
+    const focusFileRef    = useRef<HTMLInputElement>(null);
     const textareaRef     = useRef<HTMLTextAreaElement>(null);
+    const focusTitleRef    = useRef<HTMLTextAreaElement>(null);
+    const liveEditorRef    = useRef<LiveEditorHandle>(null);
     const skipSlugRef     = useRef(false);
     const saveTimeout     = useRef<ReturnType<typeof setTimeout> | null>(null);
     const previewTimeout  = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -350,7 +362,59 @@ export default function AdminPanel() {
             return { ...p, tags: [...list, tag].join(", ") };
         });
 
-    const wordCount = body.split(/\s+/).filter(Boolean).length;
+    const wordCount   = body.split(/\s+/).filter(Boolean).length;
+    const readingTime = Math.max(1, Math.round(wordCount / 200));
+
+    // Shared editor keydown (markdown shortcuts) — bound to whichever textarea
+    // (studio or focus) is passed, so both behave identically.
+    const editorKeyDown = (ref: RefObject<HTMLTextAreaElement | null>) =>
+        (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+            const ctrl = e.ctrlKey || e.metaKey;
+            if (ctrl && e.key === "b") { e.preventDefault(); wrapSelection(ref, body, setBody, "**", "**", "text"); }
+            else if (ctrl && e.key === "i") { e.preventDefault(); wrapSelection(ref, body, setBody, "_", "_", "text"); }
+            else if (ctrl && e.key === "k") { e.preventDefault(); wrapSelection(ref, body, setBody, "[", "](url)", "text"); }
+            else if (ctrl && e.shiftKey && e.key === "E") { e.preventDefault(); insertSnippet(ref, { label: "", title: "", text: "\n```typescript\n\n```\n", select: [16, 16] }, body, setBody); }
+            else if (ctrl && e.key === "e") { e.preventDefault(); wrapSelection(ref, body, setBody, "`", "`", "code"); }
+            else if (e.key === "Tab") {
+                e.preventDefault();
+                const el = ref.current!;
+                const s = el.selectionStart;
+                const nb = body.slice(0, s) + "  " + body.slice(s);
+                setBody(nb);
+                requestAnimationFrame(() => { el.focus(); el.setSelectionRange(s + 2, s + 2); });
+            }
+        };
+
+    // Auto-grow a textarea to fit its content (Medium-style: no inner scrollbar,
+    // the page scrolls instead, so what you're writing stays visible).
+    const autoGrow = (el: HTMLTextAreaElement | null) => {
+        if (!el) return;
+        el.style.height = "auto";
+        el.style.height = `${el.scrollHeight}px`;
+    };
+
+    // Upload image file(s), then hand the resulting markdown to `insert`.
+    const uploadImages = async (files: File[], insert: (md: string) => void) => {
+        const imgs = files.filter((f) => f.type.startsWith("image/"));
+        if (!imgs.length) return;
+        setUploading(true);
+        const paths: string[] = [];
+        for (const f of imgs) {
+            const fd = new FormData(); fd.append("file", f);
+            const res  = await fetch("/api/admin/upload", { method: "POST", body: fd });
+            const data = await res.json();
+            if (res.ok && data.path) paths.push(data.path);
+            else setStatus({ ok: false, msg: data.error ?? "Upload failed." });
+        }
+        setUploading(false);
+        if (!paths.length) return;
+        insert(paths.map((p) => `![](${p})`).join("\n\n"));
+        setStatus({ ok: true, msg: `✓ Inserted ${paths.length} image${paths.length > 1 ? "s" : ""}` });
+    };
+
+    // Insert markdown at the live editor's cursor (focus mode).
+    const insertIntoFocus = (md: string, select?: [number, number]) =>
+        liveEditorRef.current?.insertAtCursor(md, select);
 
     // ── Draft persistence ────────────────────────────────────────────────────
 
@@ -365,6 +429,41 @@ export default function AdminPanel() {
             setSavedAt(ts);
         } catch { /* ignore corrupt */ }
     }, []);
+
+    // Load UI prefs (drawer + focus) once on mount.
+    useEffect(() => {
+        try {
+            const raw = localStorage.getItem(UI_KEY);
+            if (!raw) return;
+            const { detailsOpen: d, focusMode: fm } = JSON.parse(raw);
+            if (typeof d === "boolean") setDetailsOpen(d);
+            if (typeof fm === "boolean") setFocusMode(fm);
+        } catch { /* ignore */ }
+    }, []);
+
+    // Persist UI prefs.
+    useEffect(() => {
+        localStorage.setItem(UI_KEY, JSON.stringify({ detailsOpen, focusMode }));
+    }, [detailsOpen, focusMode]);
+
+    // Sync the site-wide focus-mode class (hides nav/footer/mobile chrome via
+    // [data-focus-hide]); always strip it on unmount so leaving /admin restores.
+    useEffect(() => {
+        const el = document.documentElement;
+        el.classList.toggle("focus-mode", focusMode);
+        return () => el.classList.remove("focus-mode");
+    }, [focusMode]);
+
+    // Keep the focus-mode title + body textareas sized to their content.
+    useEffect(() => {
+        if (!focusMode) return;
+        // rAF so the elements are laid out before we measure scrollHeight.
+        const id = requestAnimationFrame(() => {
+            autoGrow(focusTitleRef.current);
+        });
+        return () => cancelAnimationFrame(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [focusMode, body, form.title]);
 
     const autosave = useCallback((f: FormState, b: string) => {
         if (saveTimeout.current) clearTimeout(saveTimeout.current);
@@ -383,6 +482,7 @@ export default function AdminPanel() {
         setBody(""); setSavedAt(null); setStatus(null); setEditingFile(null);
         setPreviewHtml(""); setPreviewError(null); setLiveUrl(null);
         setIsDirty(false); initialStateRef.current = null;
+        setResetKey((k) => k + 1);
     }, []);
 
     // ── Dirty tracking ───────────────────────────────────────────────────────
@@ -421,15 +521,36 @@ export default function AdminPanel() {
                 saveRef.current();
                 return;
             }
-            if (e.key === "Escape" && editingFile) {
-                if (isDirty && !confirm("Discard unsaved changes?")) return;
-                clearDraft();
+            // Cmd/Ctrl + Shift + F  → toggle full-screen focus mode
+            if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === "f") {
+                e.preventDefault();
+                setFocusMode((f) => !f);
+                return;
+            }
+            if (e.key === "Escape") {
+                // Esc closes the insert menu, then exits focus, then discards.
+                if (insertOpen) { setInsertOpen(false); return; }
+                if (focusMode) { setFocusMode(false); return; }
+                if (editingFile) {
+                    if (isDirty && !confirm("Discard unsaved changes?")) return;
+                    clearDraft();
+                }
             }
         }
         window.addEventListener("keydown", onKey);
         return () => window.removeEventListener("keydown", onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [editingFile, isDirty, clearDraft]);
+    }, [editingFile, isDirty, clearDraft, focusMode, insertOpen]);
+
+    // Close the ＋ INSERT menu on an outside click.
+    useEffect(() => {
+        if (!insertOpen) return;
+        function onDown(e: MouseEvent) {
+            if (!(e.target as HTMLElement).closest("[data-insert-menu]")) setInsertOpen(false);
+        }
+        window.addEventListener("mousedown", onDown);
+        return () => window.removeEventListener("mousedown", onDown);
+    }, [insertOpen]);
 
     // ── Debounced preview fetch ───────────────────────────────────────────────
 
@@ -576,6 +697,7 @@ export default function AdminPanel() {
         skipSlugRef.current = true;
         setForm(loadedForm);
         setBody(loadedBody);
+        setResetKey((k) => k + 1);
         setEditingFile(item.filePath);
         setIsDirty(false);
         initialStateRef.current = { form: loadedForm, body: loadedBody };
@@ -661,6 +783,7 @@ export default function AdminPanel() {
             setSavedAt(null);
             setForm({ ...INITIAL, date: today() });
             setBody("");
+            setResetKey((k) => k + 1);
         }
     }
 
@@ -760,7 +883,8 @@ export default function AdminPanel() {
         <div className="flex flex-col overflow-hidden"
             style={{ height: "calc(100vh - 3.5rem)", background: "var(--background)", fontFamily: "var(--font-mono)" }}>
 
-            {/* ── Top bar ── */}
+            {/* ── Top bar (hidden in focus mode) ── */}
+            {!focusMode && (
             <div className="flex items-center justify-between px-4 py-2 border-b shrink-0"
                 style={{ borderColor: "var(--outline-variant)", background: "var(--surface-container)" }}>
                 <div className="flex items-center gap-4">
@@ -802,6 +926,7 @@ export default function AdminPanel() {
                 </div>
                 <span className="text-xs tracking-widest" style={{ color: "var(--secondary-container)" }}>● DEV ONLY</span>
             </div>
+            )}
 
             {/* ════════════════════════════════════════════════════════════════
                 COMPOSE — three-pane resizable
@@ -809,8 +934,13 @@ export default function AdminPanel() {
             {view === "compose" && (
                 <div className="flex flex-1 min-h-0">
 
-                    {/* ── Left: metadata panel ── */}
-                    <div className="flex flex-col overflow-hidden shrink-0 border-r"
+                    {/* ── Left: metadata panel (collapsible DETAILS drawer) ── */}
+                    <AnimatePresence initial={false}>
+                    {detailsOpen && (
+                    <motion.div key="meta" className="shrink-0 overflow-hidden"
+                        initial={{ width: 0, opacity: 0 }} animate={{ width: metaWidth, opacity: 1 }} exit={{ width: 0, opacity: 0 }}
+                        transition={{ duration: 0.2, ease: "easeInOut" }}>
+                    <div className="flex flex-col overflow-hidden border-r h-full"
                         style={{ width: metaWidth, borderColor: "var(--outline-variant)", background: "var(--surface-container-low)" }}>
 
                         <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
@@ -847,7 +977,7 @@ export default function AdminPanel() {
                                 </div>
                             </div>
 
-                            <div><SideLabel>TITLE *</SideLabel><FieldInput value={form.title} onChange={(v) => set("title", v)} placeholder="Post title" /></div>
+                            {/* TITLE lives in the editor header now (promoted) */}
                             <div>
                                 <SideLabel>{editingFile ? "SLUG (locked)" : "SLUG"}</SideLabel>
                                 <FieldInput value={form.slug} onChange={(v) => set("slug", v)} placeholder="post-slug" readOnly={!!editingFile} tabIndex={editingFile ? -1 : undefined} />
@@ -1036,12 +1166,45 @@ export default function AdminPanel() {
                             </button>
                         </div>
                     </div>
+                    </motion.div>
+                    )}
+                    </AnimatePresence>
 
-                    {/* Resize handle — meta / editor */}
-                    <ResizeHandle onDelta={(d) => setMetaWidth((w) => Math.max(META_MIN, Math.min(META_MAX, w + d)))} />
+                    {/* Resize handle — meta / editor (drawer only) */}
+                    {detailsOpen && (
+                        <ResizeHandle onDelta={(d) => setMetaWidth((w) => Math.max(META_MIN, Math.min(META_MAX, w + d)))} />
+                    )}
 
                     {/* ── Center: body editor ── */}
                     <div className="flex-1 flex flex-col min-w-0">
+
+                        {/* Editor header — DETAILS toggle · Title · FOCUS */}
+                        <div className="flex items-center gap-2 px-3 py-2 border-b shrink-0"
+                            style={{ borderColor: "var(--outline-variant)", background: "var(--surface-container)" }}>
+                            <button onClick={() => setDetailsOpen((o) => !o)} title="Toggle metadata drawer"
+                                className="shrink-0 px-2 py-1 text-xs tracking-widest border transition-colors"
+                                style={{
+                                    borderColor: detailsOpen ? "var(--primary)" : "var(--outline-variant)",
+                                    color:       detailsOpen ? "var(--primary)" : "var(--on-surface-variant)",
+                                    background:  detailsOpen ? "rgba(201,131,226,0.08)" : "transparent",
+                                    fontFamily:  "var(--font-mono)",
+                                }}>
+                                ◧ DETAILS
+                            </button>
+                            <input
+                                value={form.title}
+                                onChange={(e) => set("title", e.target.value)}
+                                placeholder="Untitled — title goes here…"
+                                aria-label="Title"
+                                className="flex-1 min-w-0 bg-transparent outline-none"
+                                style={{ fontFamily: "var(--font-display)", fontSize: "1.05rem", color: "var(--on-surface)" }}
+                            />
+                            <button onClick={() => setFocusMode(true)} title="Focus mode (⌘/Ctrl + Shift + F)"
+                                className="shrink-0 px-2 py-1 text-xs tracking-widest border transition-colors hover:border-[var(--primary)] hover:text-[var(--primary)]"
+                                style={{ borderColor: "var(--outline-variant)", color: "var(--on-surface-variant)", fontFamily: "var(--font-mono)" }}>
+                                ⛶ FOCUS
+                            </button>
+                        </div>
 
                         {/* Toolbar */}
                         <div className="flex flex-wrap items-center gap-0.5 px-3 py-2 border-b shrink-0"
@@ -1103,32 +1266,7 @@ export default function AdminPanel() {
                             ref={textareaRef}
                             value={body}
                             onChange={(e) => setBody(e.target.value)}
-                            onKeyDown={(e) => {
-                                const ctrl = e.ctrlKey || e.metaKey;
-                                if (ctrl && e.key === "b") {
-                                    e.preventDefault();
-                                    wrapSelection(textareaRef, body, setBody, "**", "**", "text");
-                                } else if (ctrl && e.key === "i") {
-                                    e.preventDefault();
-                                    wrapSelection(textareaRef, body, setBody, "_", "_", "text");
-                                } else if (ctrl && e.key === "k") {
-                                    e.preventDefault();
-                                    wrapSelection(textareaRef, body, setBody, "[", "](url)", "text");
-                                } else if (ctrl && e.shiftKey && e.key === "E") {
-                                    e.preventDefault();
-                                    insertSnippet(textareaRef, { label: "", title: "", text: "\n```typescript\n\n```\n", select: [16, 16] }, body, setBody);
-                                } else if (ctrl && e.key === "e") {
-                                    e.preventDefault();
-                                    wrapSelection(textareaRef, body, setBody, "`", "`", "code");
-                                } else if (e.key === "Tab") {
-                                    e.preventDefault();
-                                    const el = textareaRef.current!;
-                                    const s = el.selectionStart;
-                                    const newBody = body.slice(0, s) + "  " + body.slice(s);
-                                    setBody(newBody);
-                                    requestAnimationFrame(() => { el.focus(); el.setSelectionRange(s + 2, s + 2); });
-                                }
-                            }}
+                            onKeyDown={editorKeyDown(textareaRef)}
                             placeholder={"## Start writing...\n\nClick toolbar buttons or use shortcuts: Ctrl+B bold · Ctrl+I italic · Ctrl+K link · Ctrl+E code · Tab indent\n\n> [!NOTE] Callout\n> Content here.\n\n$$E = mc^2$$"}
                             className="flex-1 w-full px-6 py-4 text-sm leading-relaxed resize-none outline-none bg-transparent font-mono"
                             style={{ color: "var(--on-surface)" }}
@@ -1420,6 +1558,137 @@ export default function AdminPanel() {
                     </div>
                 </div>
             )}
+
+            {/* ════════════════════════════════════════════════════════════════
+                FOCUS MODE — full-screen distraction-free writing surface
+            ════════════════════════════════════════════════════════════════ */}
+            <AnimatePresence>
+                {focusMode && (
+                    <motion.div
+                        key="focus"
+                        className="fixed inset-0 z-[60] flex flex-col"
+                        style={{ background: "var(--background)" }}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.18 }}
+                    >
+                        {/* HUD — wraps so nothing is ever clipped as width shrinks */}
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-3 sm:px-4 py-2 shrink-0"
+                            style={{ borderBottom: "1px solid var(--outline-variant)", background: "var(--surface-container-low)" }}>
+                            {/* Left: identity — grows and truncates */}
+                            <div className="flex items-center gap-2 min-w-0 flex-1" style={{ minWidth: "7rem" }}>
+                                <span className="font-mono text-xs tracking-widest shrink-0" style={{ color: "var(--on-surface-variant)" }}>
+                                    {form.type.toUpperCase()}
+                                </span>
+                                {form.draft && (
+                                    <span className="font-mono px-1 shrink-0" style={{ fontSize: 9, border: "1px solid var(--outline-variant)", color: "var(--outline)" }}>DRAFT</span>
+                                )}
+                                <span className="font-mono text-xs truncate min-w-0" style={{ color: "var(--outline)" }}>
+                                    {editingFile ?? (form.slug ? `${form.slug}.mdx` : "new draft")}
+                                </span>
+                            </div>
+
+                            {/* Right: metrics + controls — wraps as a block, never clips */}
+                            <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-2 shrink-0">
+                                <span className="font-mono text-xs whitespace-nowrap" style={{ color: "var(--outline)" }}>
+                                    {wordCount}w · ~{readingTime}m
+                                </span>
+                                <span className="font-mono text-xs truncate max-w-[14rem]" style={{ color: status && !status.ok ? "var(--error)" : "var(--outline)" }}>
+                                    {status ? status.msg : savedAt ? `saved ${savedAt}` : "ready"}
+                                </span>
+                                <div className="w-40"><FontSwitcher /></div>
+                                <div className="flex items-center gap-2">
+                                    {/* ＋ INSERT — image / table / callout / code / math / embeds */}
+                                    <div className="relative flex items-center" data-insert-menu>
+                                        <button onClick={() => setInsertOpen((o) => !o)} title="Insert (image, table, callout…)"
+                                            className="shrink-0 font-mono text-xs px-2 py-1 border tracking-widest transition-colors"
+                                            style={{
+                                                borderColor: insertOpen ? "var(--primary)" : "var(--outline-variant)",
+                                                color:       insertOpen ? "var(--primary)" : "var(--on-surface-variant)",
+                                                background:  insertOpen ? "rgba(201,131,226,0.08)" : "transparent",
+                                            }}>
+                                            ＋ INSERT
+                                        </button>
+                                        {insertOpen && (
+                                            <div className="absolute right-0 top-full mt-1 z-10 border py-1"
+                                                style={{ minWidth: 210, maxHeight: "60vh", overflowY: "auto", background: "var(--surface-container-high)", borderColor: "var(--outline-variant)", boxShadow: "0 8px 24px rgba(0,0,0,0.4)" }}>
+                                                <button onClick={() => { setInsertOpen(false); focusFileRef.current?.click(); }}
+                                                    className="w-full text-left px-3 py-1.5 font-mono text-xs flex items-center gap-2 transition-colors hover:text-[var(--primary)]"
+                                                    style={{ color: "var(--on-surface)" }}>
+                                                    <TbPhoto size={13} className="shrink-0" /> Image — upload
+                                                </button>
+                                                <div className="my-1" style={{ borderTop: "1px solid var(--outline-variant)" }} />
+                                                {SNIPPET_GROUPS
+                                                    .filter((s): s is Snippet => s !== null && !["bold", "em", "`c`"].includes(s.label))
+                                                    .map((s, i) => (
+                                                        <button key={`${s.label}-${i}`}
+                                                            onClick={() => { insertIntoFocus(s.text, s.select); setInsertOpen(false); }}
+                                                            className="w-full text-left px-3 py-1.5 font-mono text-xs flex items-center gap-2 transition-colors hover:text-[var(--primary)]"
+                                                            style={{ color: "var(--on-surface-variant)" }}>
+                                                            {s.icon && <span className="shrink-0 leading-none">{s.icon}</span>}
+                                                            <span>{s.title}</span>
+                                                        </button>
+                                                    ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <button onClick={() => { setFocusMode(false); setDetailsOpen(true); }} title="Edit details (returns to studio)"
+                                        className="shrink-0 font-mono text-xs px-2 py-1 border tracking-widest transition-colors hover:border-[var(--primary)] hover:text-[var(--primary)]"
+                                        style={{ borderColor: "var(--outline-variant)", color: "var(--on-surface-variant)" }}>
+                                        DETAILS
+                                    </button>
+                                    <button onClick={handleSave} title="Save (⌘/Ctrl+S)"
+                                        className="shrink-0 font-mono text-xs px-2 py-1 border tracking-widest transition-colors hover:bg-[var(--primary)] hover:text-[var(--on-primary)]"
+                                        style={{ borderColor: "var(--primary)", color: "var(--primary)" }}>
+                                        SAVE
+                                    </button>
+                                    <button onClick={() => setFocusMode(false)} title="Exit focus (Esc)"
+                                        className="shrink-0 font-mono text-xs px-2 py-1 border tracking-widest transition-colors hover:border-[var(--primary)] hover:text-[var(--primary)]"
+                                        style={{ borderColor: "var(--outline-variant)", color: "var(--on-surface-variant)" }}>
+                                        ⛶ EXIT
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Writing surface — auto-growing textareas; the page scrolls
+                            (Medium-style) so what you're writing is always visible. */}
+                        <div className="flex-1 overflow-y-auto">
+                            <div className="mx-auto w-full px-4 sm:px-6 py-8 sm:py-10 flex flex-col" style={{ maxWidth: 760, minHeight: "100%" }}>
+                                <textarea
+                                    ref={focusTitleRef}
+                                    value={form.title}
+                                    onChange={(e) => { set("title", e.target.value); autoGrow(e.target); }}
+                                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); liveEditorRef.current?.focus(); } }}
+                                    rows={1}
+                                    placeholder="Title"
+                                    aria-label="Title"
+                                    className="w-full bg-transparent outline-none resize-none overflow-hidden mb-6 shrink-0"
+                                    style={{ fontFamily: "var(--reader-font, var(--font-display))", fontSize: "2rem", fontWeight: 700, lineHeight: 1.2, color: "var(--on-surface)" }}
+                                />
+                                {/* Live markdown editor — headings/code render as you type.
+                                    key={resetKey} remounts it on external body resets. */}
+                                <LiveMarkdownEditor
+                                    key={resetKey}
+                                    ref={liveEditorRef}
+                                    value={body}
+                                    onChange={setBody}
+                                    onInsertImages={(files) => uploadImages(files, insertIntoFocus)}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Hidden input for ＋ INSERT → Image upload (inserts at caret) */}
+                        <input ref={focusFileRef} type="file" accept="image/*" multiple className="hidden"
+                            onChange={(e) => {
+                                const files = Array.from(e.target.files ?? []);
+                                if (files.length) uploadImages(files, insertIntoFocus);
+                                if (e.target) e.target.value = "";
+                            }} />
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }
