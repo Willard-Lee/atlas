@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import { existsSync } from "node:fs";
+import path from "node:path";
 
 export const runtime = "nodejs";
 
@@ -80,10 +82,18 @@ export async function POST(req: NextRequest) {
     try {
         const branch = await currentBranch();
 
-        await git(["add", "--", ...TRACKED]);
+        // Only add tracked paths that actually exist. `git add` aborts on a
+        // pathspec that matches nothing (e.g. public/images before the first
+        // image upload), which would otherwise fail the whole publish.
+        const existing = TRACKED.filter((p) => existsSync(path.join(cwd, p)));
+        if (existing.length === 0) {
+            return NextResponse.json({ committed: false, message: "Nothing to commit" });
+        }
+
+        await git(["add", "--", ...existing]);
 
         // Nothing staged? Report cleanly instead of failing the commit.
-        const staged = await git(["diff", "--cached", "--name-only", "--", ...TRACKED]);
+        const staged = await git(["diff", "--cached", "--name-only", "--", ...existing]);
         if (!staged) {
             return NextResponse.json({ committed: false, message: "Nothing to commit" });
         }
