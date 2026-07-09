@@ -691,3 +691,22 @@ html.light[data-reader-font="serif"] .prose :is(h1, h2, h3, h4, h5, h6) {
     0 0px 0 0 var(--icon-depth),
     0 1px 4px rgba(0,0,0,0.3);
 }
+
+/* ── Mermaid diagrams (rendered client-side by MermaidRunner) ─────────────── */
+.mermaid {
+  display: flex;
+  justify-content: center;
+  margin: 1.75rem 0;
+  overflow-x: auto;           /* wide diagrams scroll instead of overflowing the page */
+}
+/* Pre-render state: keep the raw source unobtrusive until SVG replaces it */
+.mermaid:not([data-processed]) {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--outline);
+  white-space: pre;
+}
+.mermaid[data-processed] svg {
+  max-width: 100%;
+  height: auto;
+}

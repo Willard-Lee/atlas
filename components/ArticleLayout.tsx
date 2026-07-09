@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import FontSwitcher from "@/components/FontSwitcher";
+import MermaidRunner from "@/components/MermaidRunner";
 
 type Heading = { id: string; text: string; level: number };
 
@@ -82,6 +83,7 @@ export default function ArticleLayout({ children, right, headings = [] }: Props)
             }}
         >
             {children}
+            <MermaidRunner />
 
             {/* ── Floating window (desktop) ──────────────────────────── */}
             <motion.div

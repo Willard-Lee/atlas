@@ -19,6 +19,33 @@ const calloutTypes: Record<string, string> = {
     important: "IMPORTANT", caution: "CAUTION",
 };
 
+// Turn ```mermaid fences into inert <div class="mermaid">…source…</div> nodes.
+// MUST run BEFORE rehypePrettyCode so pretty-code never syntax-highlights them.
+// A client <MermaidRunner> renders these divs to SVG after hydration.
+function rehypeMermaid() {
+    return (tree: any) => {
+        function walk(node: any) {
+            node.children?.forEach(walk);
+
+            if (node.type !== "element" || node.tagName !== "pre") return;
+
+            const code = node.children?.find((c: any) => c.type === "element" && c.tagName === "code");
+            const className: string[] = code?.properties?.className ?? [];
+            if (!className.includes("language-mermaid")) return;
+
+            const source = (code.children ?? [])
+                .filter((c: any) => c.type === "text")
+                .map((c: any) => c.value)
+                .join("");
+
+            node.tagName = "div";
+            node.properties = { className: ["mermaid"] };
+            node.children = [{ type: "text", value: source }];
+        }
+        walk(tree);
+    };
+}
+
 function rehypeCallouts() {
     return (tree: any) => {
         function walk(node: any) {
@@ -76,6 +103,7 @@ export async function renderMDX(source: string){
                     rehypeSlug,
                     [rehypeAutolinkHeadings, { behavior: "wrap" }],
                     rehypeKatex,
+                    rehypeMermaid,   // must precede rehypePrettyCode
                     [rehypePrettyCode, { theme: "github-dark-dimmed" }],
                     rehypeCallouts,
                 ]
